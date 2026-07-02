@@ -1,454 +1,649 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Localizador de Parceiros Sema MPDFT</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f4f6f9;
-      color: #1b2a4a;
-    }
-    header {
-      background: linear-gradient(135deg, #0b3d91, #1565c0);
+    :root { --header-height: 110px; }
+    body { padding-top: var(--header-height); margin: 0; }
+    .app-header {
+      background-color: #003366;
       color: #fff;
-      padding: 18px 24px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      padding: 1rem 1.5rem;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1100;
     }
-    header h1 { font-size: 1.4rem; }
-    header p { font-size: 0.9rem; opacity: 0.9; margin-top: 4px; }
-    .container {
-      display: grid;
-      grid-template-columns: 340px 1fr;
-      gap: 16px;
-      padding: 16px;
-      height: calc(100vh - 92px);
+    .app-header h1 { font-size: 1.5rem; margin-bottom: 0.2rem; }
+    .app-header p { margin: 0; opacity: 0.85; }
+    .sidebar {
+      width: 420px;
+      position: fixed;
+      top: var(--header-height);
+      left: 0;
+      bottom: 0;
+      background: #f8f9fa;
+      border-right: 1px solid #dee2e6;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
     }
-    .panel {
-      background: #fff;
-      border-radius: 10px;
-      padding: 16px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      overflow-y: auto;
+    .map-container {
+      position: fixed;
+      top: var(--header-height);
+      left: 420px;
+      right: 0;
+      bottom: 0;
+      z-index: 0;
     }
-    .panel h2 { font-size: 1rem; margin-bottom: 12px; color: #0b3d91; }
-    label { display: block; font-size: 0.85rem; font-weight: 600; margin: 10px 0 4px; }
-    input, select {
-      width: 100%;
-      padding: 8px 10px;
-      border: 1px solid #c5cdd6;
-      border-radius: 6px;
-      font-size: 0.9rem;
+    #map { width: 100%; height: 100%; }
+    .institution-card { cursor: pointer; transition: transform 0.1s; }
+    .institution-card:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important; }
+    .program-btn {
+      border-radius: 50rem !important;
+      border: 1px solid transparent;
+      color: #fff !important;
     }
-    .btn {
-      background: #1565c0;
-      color: #fff;
-      border: none;
-      padding: 10px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      margin-top: 14px;
-      width: 100%;
-    }
-    .btn:hover { background: #0b3d91; }
-    .btn.secondary { background: #6c757d; margin-top: 8px; }
-    .btn.secondary:hover { background: #565e64; }
-    #map {
-      border-radius: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      height: 100%;
-      min-height: 400px;
-    }
-    .results { margin-top: 16px; }
-    .result-item {
-      border: 1px solid #e3e7ee;
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin-bottom: 10px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .result-item:hover { border-color: #1565c0; background: #f0f6ff; }
-    .result-item h3 { font-size: 0.95rem; color: #0b3d91; }
-    .result-item p { font-size: 0.8rem; margin-top: 4px; color: #44506b; }
-    .badge {
-      display: inline-block;
-      font-size: 0.7rem;
-      padding: 2px 6px;
-      border-radius: 10px;
-      margin-right: 4px;
-      margin-top: 6px;
-      background: #e3f2fd;
-      color: #0b3d91;
-    }
-    .badge.weekend { background: #fff3cd; color: #856404; }
-    .badge.night { background: #d1ecf1; color: #0c5460; }
-    .status { font-size: 0.8rem; margin-top: 10px; color: #6c757d; }
-    .distance { font-size: 0.78rem; color: #1565c0; font-weight: 600; margin-top: 4px; }
+    .program-btn.active { box-shadow: 0 0 0 3px rgba(0,0,0,0.25); }
+    .program-btn[data-id="todos"] { background-color: #6c757d; }
+    .badge.rounded-pill { font-size: 0.75rem; }
     @media (max-width: 768px) {
-      .container { grid-template-columns: 1fr; height: auto; }
-      #map { height: 50vh; }
+      .sidebar { width: 100%; position: relative; top: 0; height: 50vh; border-right: none; border-bottom: 1px solid #dee2e6; }
+      .map-container { position: relative; left: 0; top: 0; height: 50vh; }
+      body { padding-top: 90px; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Localizador de Parceiros Sema MPDFT</h1>
-    <p>Encontre instituições parceiras próximas a você.</p>
+  <header class="app-header">
+    <div class="d-flex align-items-center gap-3">
+      <i class="fa-solid fa-handshake fa-2x"></i>
+      <div>
+        <h1><strong>Localizador de Parceiros Sema MPDFT</strong></h1>
+        <p>Encontre instituições parceiras</p>
+      </div>
+    </div>
   </header>
 
-  <div class="container">
-    <aside class="panel">
-      <h2>Filtros</h2>
+  <main>
+    <aside class="sidebar">
+      <div class="p-3 border-bottom">
+        <h5 class="mb-3"><i class="fa-solid fa-filter"></i> Filtros</h5>
 
-      <label for="reference">Ponto de Referência (Endereço)</label>
-      <input type="text" id="reference" placeholder="Ex.: Praça do Buriti, Gama - DF" />
+        <div class="input-group input-group-sm mb-2">
+          <input type="text" id="searchInput" class="form-control" placeholder="Buscar por nome, endereço, programa...">
+          <button id="searchBtn" class="btn btn-primary" type="button"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </div>
 
-      <label for="city">Cidade/UF</label>
-      <input type="text" id="city" placeholder="Ex.: Brasília/DF" />
+        <div class="input-group input-group-sm mb-2">
+          <input type="text" id="cepInput" class="form-control" placeholder="CEP (00000-000)" maxlength="9">
+          <button id="cepBtn" class="btn btn-outline-secondary" type="button">📍 Buscar Localização</button>
+        </div>
 
-      <label for="program">Programa</label>
-      <select id="program">
-        <option value="">Todos</option>
-        <option value="Pecuniária">Pecuniária</option>
-        <option value="Serviços">Serviços</option>
-        <option value="Palestras">Palestras</option>
-        <option value="Saúde">Saúde</option>
-      </select>
+        <div class="btn-group btn-group-sm w-100 mb-2">
+          <button id="gpsBtn" class="btn btn-outline-secondary"><i class="fa-solid fa-satellite-dish"></i> GPS</button>
+          <button id="clearBtn" class="btn btn-outline-danger"><i class="fa-solid fa-broom"></i> Limpar</button>
+        </div>
 
-      <label for="weekend">Final de Semana</label>
-      <select id="weekend">
-        <option value="">Indiferente</option>
-        <option value="Sim">Sim</option>
-        <option value="Não">Não</option>
-      </select>
+        <div class="mb-3">
+          <label for="radiusSlider" class="form-label small mb-1">Raio: <span id="radiusValue">100</span> km</label>
+          <input type="range" class="form-range" id="radiusSlider" min="1" max="100" value="100">
+        </div>
 
-      <label for="night">Período Noturno</label>
-      <select id="night">
-        <option value="">Indiferente</option>
-        <option value="Sim">Sim</option>
-        <option value="Não">Não</option>
-      </select>
+        <div id="programFilters" class="d-flex flex-wrap gap-2 mb-3"></div>
 
-      <button class="btn" id="searchBtn">Buscar Parceiros</button>
-      <button class="btn secondary" id="clearBtn">Limpar Filtros</button>
+        <div id="progressContainer" class="d-none">
+          <small class="text-muted">Geocodificando: <span id="progressText">0 de 0</span> instituições</small>
+          <div class="progress" style="height: 8px;">
+            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+          </div>
+        </div>
 
-      <div class="status" id="status"></div>
+        <div class="small text-muted"><span id="countBadge">0</span> instituições encontradas</div>
+      </div>
 
-      <div class="results" id="results"></div>
+      <div id="cardsContainer" class="flex-grow-1 overflow-auto p-3">
+        <div class="text-center text-muted mt-5"><i class="fa-solid fa-circle-notch fa-spin"></i> Carregando dados...</div>
+      </div>
     </aside>
 
-    <main>
+    <div class="map-container">
       <div id="map"></div>
-    </main>
-  </div>
+    </div>
+  </main>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // ===== Configuração da Planilha (Google Sheets publicada como CSV) =====
-    const SPREADSHEET_ID = '1muZsxS4W9VOfdhfn4nxc1dFxskAPpOwUXIdpsfK4-Ns';
-    const SHEET_GID = '0'; // ajuste se a aba principal tiver outro GID
-    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4piiHPoYzoa6AMbnp3cev6lMx_QTFibh79hifYTXNE0F2a_1I4v7yl7a7xkOCGlAh4k52Jl7pHk4o/pub?output=csv';
+    const CACHE_KEY = 'sema_mpdft_geocode_cache_v1';
+    const DEFAULT_CITY = 'Brasília';
+    const INITIAL_VIEW = [-15.7797, -47.9292];
 
-    // ===== Mapa =====
-    const map = L.map('map').setView([-15.7801, -47.9292], 11); // Brasília/DF
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap', maxZoom: 19
-    }).addTo(map);
+    const PROGRAMS = [
+      { id: 'servicos', label: 'Prestação de Serviços', color: '#0d6efd', keywords: ['servico', 'serviço', 'servicos', 'serviços', 'bens'] },
+      { id: 'pecuniaria', label: 'Prestação Pecuniária', color: '#198754', keywords: ['pecuni', 'pecuniaria', 'pecuniária', 'dinheiro', 'multa', 'valor'] },
+      { id: 'saude', label: 'Programa de Saúde', color: '#dc3545', keywords: ['saude', 'saúde', 'medico', 'médica', 'hospital', 'clinica', 'clínica'] },
+      { id: 'palestras', label: 'Palestras', color: '#6f42c1', keywords: ['palestra', 'palestras', 'educacao', 'educação', 'capacitacao', 'capacitação', 'curso', 'workshop'] }
+    ];
 
-    let parceiros = [];
-    let markersLayer = L.layerGroup().addTo(map);
-    let referenceMarker = null;
-    let referencePoint = null;
+    let allItems = [];
+    let map, markersLayer;
+    let refMarker = null, refCircle = null;
+    let refPoint = null;
+    let activeProgram = 'todos';
+    let cache = {};
 
-    // ===== Utilitários =====
-    function setStatus(msg) {
-      document.getElementById('status').textContent = msg;
+    document.addEventListener('DOMContentLoaded', () => {
+      initCache();
+      initMap();
+      initEvents();
+      loadData();
+    });
+
+    function initCache() {
+      try {
+        const saved = localStorage.getItem(CACHE_KEY);
+        cache = saved ? JSON.parse(saved) : {};
+      } catch (e) {
+        cache = {};
+      }
     }
 
-    function normalize(text) {
-      return (text || '').toString().trim().toLowerCase();
+    function saveCache() {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+      } catch (e) {}
     }
 
-    function haversine(lat1, lon1, lat2, lon2) {
-      const R = 6371; // km
-      const toRad = (v) => (v * Math.PI) / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-      return 2 * R * Math.asin(Math.sqrt(a));
+    function initMap() {
+      map = L.map('map').setView(INITIAL_VIEW, 11);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+      }).addTo(map);
+      markersLayer = L.layerGroup().addTo(map);
     }
 
-    // ===== Parser CSV simples (suporta aspas e vírgulas internas) =====
-    function parseCSV(text) {
-      const rows = [];
-      let row = [];
-      let field = '';
-      let inQuotes = false;
-
-      for (let i = 0; i < text.length; i++) {
-        const c = text[i];
-        const next = text[i + 1];
-
-        if (inQuotes) {
-          if (c === '"' && next === '"') {
-            field += '"';
-            i++;
-          } else if (c === '"') {
-            inQuotes = false;
-          } else {
-            field += c;
-          }
+    function initEvents() {
+      document.getElementById('searchInput').addEventListener('input', debounce(() => { renderCards(); updateMarkers(); }, 250));
+      document.getElementById('searchBtn').addEventListener('click', () => { renderCards(); updateMarkers(); });
+      document.getElementById('cepBtn').addEventListener('click', buscarPorCep);
+      document.getElementById('gpsBtn').addEventListener('click', buscarPorGps);
+      document.getElementById('clearBtn').addEventListener('click', limparFiltros);
+      document.getElementById('radiusSlider').addEventListener('input', (e) => {
+        document.getElementById('radiusValue').textContent = e.target.value;
+        if (refPoint) {
+          setRef(refPoint.lat, refPoint.lng, refPoint.address);
         } else {
-          if (c === '"') {
-            inQuotes = true;
-          } else if (c === ',') {
-            row.push(field);
-            field = '';
-          } else if (c === '\n' || c === '\r') {
-            if (c === '\r' && next === '\n') i++;
-            row.push(field);
-            rows.push(row);
-            row = [];
-            field = '';
-          } else {
-            field += c;
+          renderCards();
+          updateMarkers();
+        }
+      });
+      document.getElementById('cepInput').addEventListener('input', (e) => {
+        let v = e.target.value.replace(/\D/g, '');
+        if (v.length > 8) v = v.slice(0, 8);
+        if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5);
+        e.target.value = v;
+      });
+      document.getElementById('programFilters').addEventListener('click', (e) => {
+        const btn = e.target.closest('.program-btn');
+        if (!btn) return;
+        activeProgram = btn.dataset.id;
+        renderFilters();
+        renderCards();
+        updateMarkers();
+      });
+      document.getElementById('cardsContainer').addEventListener('click', (e) => {
+        const card = e.target.closest('.institution-card');
+        if (!card) return;
+        const id = parseInt(card.dataset.id);
+        const item = allItems.find(i => i.id === id);
+        if (!item) return;
+        if (item.lat && item.lng) {
+          map.flyTo([item.lat, item.lng], 16);
+          markersLayer.eachLayer(layer => {
+            if (layer.item && layer.item.id === id) layer.openPopup();
+          });
+        } else {
+          alert('Esta instituição ainda não possui coordenadas no mapa.');
+        }
+      });
+    }
+
+    function loadData() {
+      Papa.parse(CSV_URL, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          if (!results.data || results.data.length === 0) {
+            mostrarErro('Nenhum dado encontrado na planilha.');
+            return;
+          }
+          const mapping = mapColumns(results.meta.fields);
+          allItems = processRows(results.data, mapping);
+          aplicarCache();
+          renderFilters();
+          renderCards();
+          updateMarkers();
+          geocodeMissing();
+        },
+        error: function(err) {
+          console.error(err);
+          mostrarErro('Não foi possível carregar a planilha. Verifique a conexão.');
+        }
+      });
+    }
+
+    function mostrarErro(msg) {
+      document.getElementById('cardsContainer').innerHTML = `<div class="alert alert-danger m-3"><i class="fa-solid fa-triangle-exclamation"></i> ${msg}</div>`;
+    }
+
+    function mapColumns(fields) {
+      const norm = fields.map(f => normalize(String(f)));
+      const find = (keywords) => {
+        for (const kw of keywords) {
+          const idx = norm.findIndex(x => x.includes(kw));
+          if (idx >= 0) return fields[idx];
+        }
+        return null;
+      };
+      return {
+        nome: find(['nome completo', 'nome', 'razao social', 'razão social', 'instituicao', 'instituição', 'entidade', 'parceiro']),
+        endereco: find(['endereco', 'endereço', 'endereco completo', 'local', 'rua', 'logradouro']),
+        cep: find(['cep']),
+        horario: find(['horario', 'horário', 'horario de funcionamento', 'funcionamento', 'atendimento']),
+        programa: find(['programa', 'programas', 'tipo', 'categoria', 'area', 'área']),
+        latitude: find(['latitude', 'lat', 'latidude', 'latid']),
+        longitude: find(['longitude', 'long', 'lon', 'lng', 'longetude']),
+        conferirMapa: find(['conferir no mapa', 'conferir', 'mapa', 'link', 'url', 'google maps'])
+      };
+    }
+
+    function processRows(rows, mapping) {
+      return rows.map((r, idx) => {
+        const item = {
+          id: idx,
+          nome: getValue(r, mapping.nome),
+          endereco: getValue(r, mapping.endereco),
+          cep: getValue(r, mapping.cep),
+          horario: getValue(r, mapping.horario),
+          programa: getValue(r, mapping.programa),
+          conferirMapa: getValue(r, mapping.conferirMapa),
+          lat: null,
+          lng: null,
+          programas: []
+        };
+        item.programas = detectPrograms(item.programa);
+        const latText = String(getValue(r, mapping.latitude)).replace(',', '.').trim();
+        const lngText = String(getValue(r, mapping.longitude)).replace(',', '.').trim();
+        if (latText && lngText && !/erro|error|null|undefined|n\/a|^-$/i.test(latText + lngText)) {
+          const lat = parseFloat(latText);
+          const lng = parseFloat(lngText);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            item.lat = lat;
+            item.lng = lng;
           }
         }
-      }
-      if (field.length > 0 || row.length > 0) {
-        row.push(field);
-        rows.push(row);
-      }
-      return rows.filter(r => r.some(c => c.trim() !== ''));
+        return item;
+      }).filter(i => i.nome || i.endereco);
     }
 
-    // ===== Geocodificação via Nominatim =====
-    async function geocode(address) {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`;
+    function getValue(row, colName) {
+      if (!colName) return '';
+      const val = row[colName];
+      return val === undefined || val === null ? '' : String(val).trim();
+    }
+
+    function aplicarCache() {
+      let usou = 0;
+      for (const item of allItems) {
+        if (item.lat && item.lng) continue;
+        const key = buildAddress(item);
+        if (cache[key]) {
+          item.lat = cache[key].lat;
+          item.lng = cache[key].lng;
+          usou++;
+        }
+      }
+      if (usou) console.log(`Cache aplicado em ${usou} instituições`);
+    }
+
+    function detectPrograms(text) {
+      if (!text) return [];
+      const t = normalize(text);
+      const found = [];
+      for (const p of PROGRAMS) {
+        if (p.keywords.some(k => t.includes(k))) found.push(p);
+      }
+      return found;
+    }
+
+    function renderFilters() {
+      const container = document.getElementById('programFilters');
+      container.innerHTML = '';
+      container.appendChild(createProgramBtn('todos', 'Todos', '#6c757d'));
+      for (const p of PROGRAMS) {
+        container.appendChild(createProgramBtn(p.id, p.label, p.color));
+      }
+    }
+
+    function createProgramBtn(id, label, color) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-sm program-btn';
+      btn.dataset.id = id;
+      btn.textContent = label;
+      btn.style.backgroundColor = color;
+      if (activeProgram === id) btn.classList.add('active');
+      return btn;
+    }
+
+    function getFilteredItems() {
+      const term = normalize(document.getElementById('searchInput').value);
+      let list = allItems.filter(item => {
+        if (activeProgram !== 'todos' && !item.programas.some(p => p.id === activeProgram)) return false;
+        if (term) {
+          const text = normalize(`${item.nome} ${item.endereco} ${item.cep} ${item.programa} ${item.horario}`);
+          if (!text.includes(term)) return false;
+        }
+        return true;
+      });
+      if (refPoint) {
+        list = list.map(item => {
+          const d = (item.lat && item.lng) ? haversine(refPoint.lat, refPoint.lng, item.lat, item.lng) : null;
+          return { item, distance: d };
+        }).filter(x => x.distance === null || x.distance <= refPoint.radius).sort((a, b) => {
+          if (a.distance === null && b.distance === null) return a.item.nome.localeCompare(b.item.nome, 'pt-BR');
+          if (a.distance === null) return 1;
+          if (b.distance === null) return -1;
+          return a.distance - b.distance;
+        }).map(x => x.item);
+      } else {
+        list.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+      }
+      return list;
+    }
+
+    function renderCards() {
+      const container = document.getElementById('cardsContainer');
+      const items = getFilteredItems();
+      document.getElementById('countBadge').textContent = items.length;
+      if (items.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted mt-5">Nenhuma instituição encontrada.</div>';
+        return;
+      }
+      container.innerHTML = items.map(item => buildCard(item)).join('');
+    }
+
+    function buildCard(item) {
+      const dist = (refPoint && item.lat && item.lng) ? haversine(refPoint.lat, refPoint.lng, item.lat, item.lng).toFixed(1) : null;
+      const badges = item.programas.map(p => `<span class="badge rounded-pill me-1 mb-1" style="background-color:${p.color}">${p.label}</span>`).join('');
+      const mapLink = item.conferirMapa
+        ? (/^https?:\/\//i.test(item.conferirMapa)
+          ? `<a href="${item.conferirMapa}" target="_blank" class="small"><i class="fa-solid fa-map-location-dot"></i> Conferir no Mapa</a>`
+          : `<div class="small text-muted"><i class="fa-solid fa-map-location-dot"></i> ${item.conferirMapa}</div>`)
+        : '';
+      return `
+        <div class="card institution-card shadow-sm mb-2" data-id="${item.id}">
+          <div class="card-body">
+            <h6 class="card-title fw-bold mb-1">${item.nome}</h6>
+            <p class="card-text small mb-1"><i class="fa-solid fa-location-dot text-secondary"></i> ${item.endereco || 'Endereço não informado'}</p>
+            <p class="card-text small mb-1"><i class="fa-solid fa-envelope text-secondary"></i> CEP: ${formatCep(item.cep)}</p>
+            <p class="card-text small mb-1"><i class="fa-solid fa-clock text-secondary"></i> ${item.horario || 'Horário não informado'}</p>
+            <div class="mb-1">${badges}</div>
+            <div class="d-flex justify-content-between align-items-center">
+              ${mapLink}
+              ${dist !== null ? `<span class="badge bg-secondary"><i class="fa-solid fa-map-pin"></i> ${dist} km</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateMarkers() {
+      markersLayer.clearLayers();
+      const items = getFilteredItems();
+      items.forEach(item => {
+        if (item.lat && item.lng) {
+          const marker = L.marker([item.lat, item.lng]);
+          marker.item = item;
+          marker.bindPopup(buildPopup(item));
+          markersLayer.addLayer(marker);
+        }
+      });
+    }
+
+    function buildPopup(item) {
+      const badges = item.programas.map(p => `<span class="badge rounded-pill me-1" style="background-color:${p.color}">${p.label}</span>`).join('');
+      const mapLink = item.conferirMapa && /^https?:\/\//i.test(item.conferirMapa)
+        ? `<br><a href="${item.conferirMapa}" target="_blank">Conferir no Mapa</a>` : '';
+      return `
+        <div>
+          <strong>${item.nome}</strong><br>
+          <span class="small">${item.endereco}</span><br>
+          <span class="small">CEP: ${formatCep(item.cep)}</span><br>
+          <span class="small"><i class="fa-solid fa-clock"></i> ${item.horario}</span><br>
+          <div class="mt-1">${badges}</div>
+          ${mapLink}
+        </div>
+      `;
+    }
+
+    async function geocodeMissing() {
+      const toProcess = allItems.filter(item => !item.lat && (item.endereco || item.cep));
+      const total = toProcess.length;
+      if (total === 0) {
+        hideProgress();
+        return;
+      }
+      showProgress(0, total);
+      for (let i = 0; i < total; i++) {
+        const item = toProcess[i];
+        const fullAddress = buildAddress(item);
+        let coords = null;
+        if (cache[fullAddress]) {
+          coords = cache[fullAddress];
+        } else {
+          coords = await nominatimGeocode(fullAddress);
+          if (!coords) {
+            const simpleAddress = buildAddress(item, true);
+            coords = await nominatimGeocode(simpleAddress);
+          }
+          if (coords) {
+            cache[fullAddress] = coords;
+            saveCache();
+          }
+        }
+        if (coords) {
+          item.lat = coords.lat;
+          item.lng = coords.lng;
+          adicionarMarcador(item);
+          scheduleListUpdate();
+        }
+        showProgress(i + 1, total);
+        await sleep(1100);
+      }
+      hideProgress();
+      renderCards();
+      updateMarkers();
+    }
+
+    function adicionarMarcador(item) {
+      if (!item.lat || !item.lng) return;
+      const marker = L.marker([item.lat, item.lng]);
+      marker.item = item;
+      marker.bindPopup(buildPopup(item));
+      markersLayer.addLayer(marker);
+    }
+
+    let listUpdateTimeout;
+    function scheduleListUpdate() {
+      clearTimeout(listUpdateTimeout);
+      listUpdateTimeout = setTimeout(() => {
+        renderCards();
+        updateMarkers();
+      }, 300);
+    }
+
+    function buildAddress(item, simple = false) {
+      if (simple) return `${DEFAULT_CITY}, DF, Brasil`;
+      const endereco = item.endereco;
+      const cep = cleanCep(item.cep);
+      let address = `${endereco}, ${DEFAULT_CITY}, DF, Brasil`;
+      if (cep) address += `, ${cep}`;
+      return address;
+    }
+
+    async function nominatimGeocode(address) {
+      if (!address || normalize(address) === '') return null;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=br&limit=1`;
       try {
-        const resp = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
-        const data = await resp.json();
-        if (data && data.length > 0) {
-          return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+        const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
         }
       } catch (e) {
-        console.warn('Falha na geocodificação:', address, e);
+        console.warn('Erro na geocodificação:', e);
       }
       return null;
     }
 
-    // ===== Carregamento e mapeamento das colunas =====
-    async function carregarParceiros() {
-      setStatus('Carregando dados da planilha...');
+    async function nominatimReverse(lat, lng) {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
       try {
-        const resp = await fetch(CSV_URL);
-        if (!resp.ok) throw new Error('Não foi possível acessar a planilha.');
-        const text = await resp.text();
-        const rows = parseCSV(text);
-        if (rows.length < 2) throw new Error('Planilha vazia.');
-
-        const headers = rows[0].map(h => h.trim());
-        const idx = (name) => headers.findIndex(h => h.toLowerCase() === name.toLowerCase());
-
-        const col = {
-          nome: idx('Nome da Instituição'),
-          endereco: idx('Endereço Completo'),
-          cep: idx('CEP'),
-          cidade: idx('Cidade/UF'),
-          horario: idx('Horário de Funcionamento'),
-          programa: idx('Programa (Pecuniária, Serviços, Palestras, Saúde)'),
-          weekend: idx('Final de Semana (Sim/Não)'),
-          night: idx('Período Noturno (Sim/Não)'),
-          obs: idx('Observações / Restrições'),
-          lat: idx('Latitude (Opcional)'),
-          lon: idx('Longitude (Opcional)')
-        };
-
-        const lista = [];
-        for (let i = 1; i < rows.length; i++) {
-          const r = rows[i];
-          const nome = col.nome >= 0 ? r[col.nome] : '';
-          if (!nome || !nome.trim()) continue;
-
-          const endereco = col.endereco >= 0 ? r[col.endereco] : '';
-          const cep = col.cep >= 0 ? r[col.cep] : '';
-          const cidade = col.cidade >= 0 ? r[col.cidade] : '';
-          const horario = col.horario >= 0 ? r[col.horario] : '';
-          const programa = col.programa >= 0 ? r[col.programa] : '';
-          const weekend = col.weekend >= 0 ? r[col.weekend] : '';
-          const night = col.night >= 0 ? r[col.night] : '';
-          const obs = col.obs >= 0 ? r[col.obs] : '';
-          const latRaw = col.lat >= 0 ? r[col.lat] : '';
-          const lonRaw = col.lon >= 0 ? r[col.lon] : '';
-
-          let lat = parseFloat(latRaw);
-          let lon = parseFloat(lonRaw);
-          if (isNaN(lat) || isNaN(lon)) {
-            const enderecoCompleto = [endereco, cep, cidade].filter(Boolean).join(', ');
-            const geo = await geocode(enderecoCompleto);
-            if (geo) { lat = geo.lat; lon = geo.lon; }
-          }
-
-          lista.push({
-            nome: nome.trim(),
-            endereco: endereco.trim(),
-            cep: cep.trim(),
-            cidade: cidade.trim(),
-            horario: horario.trim(),
-            programa: programa.trim(),
-            weekend: normalize(weekend),
-            night: normalize(night),
-            obs: obs.trim(),
-            lat, lon
-          });
-        }
-
-        parceiros = lista;
-        setStatus(`${parceiros.length} parceiro(s) carregado(s).`);
-        aplicarFiltros();
+        const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data && data.display_name ? data.display_name : null;
       } catch (e) {
-        console.error(e);
-        setStatus('Erro ao carregar: ' + e.message);
+        return null;
       }
     }
 
-    // ===== Filtros e ordenação =====
-    function aplicarFiltros() {
-      const ref = document.getElementById('reference').value.trim();
-      const city = normalize(document.getElementById('city').value);
-      const program = normalize(document.getElementById('program').value);
-      const weekend = normalize(document.getElementById('weekend').value);
-      const night = normalize(document.getElementById('night').value);
-
-      let filtrados = parceiros.filter(p => {
-        if (city && !normalize(p.cidade).includes(city)) return false;
-        if (program && !normalize(p.programa).includes(program)) return false;
-        if (weekend && p.weekend !== weekend) return false;
-        if (night && p.night !== night) return false;
-        return true;
-      });
-
-      // Ordenação
-      if (referencePoint) {
-        filtrados = filtrados
-          .filter(p => !isNaN(p.lat) && !isNaN(p.lon))
-          .map(p => ({ ...p, distancia: haversine(referencePoint.lat, referencePoint.lon, p.lat, p.lon) }))
-          .sort((a, b) => a.distancia - b.distancia);
-      } else {
-        filtrados.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-      }
-
-      renderizar(filtrados);
-    }
-
-    // ===== Renderização =====
-    function renderizar(lista) {
-      const results = document.getElementById('results');
-      results.innerHTML = '';
-      markersLayer.clearLayers();
-
-      if (!lista.length) {
-        results.innerHTML = '<p class="status">Nenhum parceiro encontrado com os filtros selecionados.</p>';
+    async function buscarPorCep() {
+      const cep = document.getElementById('cepInput').value.replace(/\D/g, '');
+      if (cep.length !== 8) {
+        alert('Por favor, digite um CEP válido.');
         return;
       }
-
-      lista.forEach(p => {
-        const item = document.createElement('div');
-        item.className = 'result-item';
-
-        const badges = [];
-        if (p.weekend === 'sim') badges.push('<span class="badge weekend">Final de Semana</span>');
-        if (p.night === 'sim') badges.push('<span class="badge night">Noturno</span>');
-        if (p.programa) badges.push(`<span class="badge">${p.programa}</span>`);
-
-        const dist = (typeof p.distancia === 'number') ?
-          `<div class="distance">${p.distancia.toFixed(2)} km de distância</div>` : '';
-
-        item.innerHTML = `
-          <h3>${p.nome}</h3>
-          <p>${p.endereco}${p.cep ? ' — CEP ' + p.cep : ''}</p>
-          <p>${p.cidade}</p>
-          ${p.horario ? `<p>Horário: ${p.horario}</p>` : ''}
-          ${p.obs ? `<p>Obs.: ${p.obs}</p>` : ''}
-          <div>${badges.join('')}</div>
-          ${dist}
-        `;
-
-        item.addEventListener('click', () => {
-          if (!isNaN(p.lat) && !isNaN(p.lon)) {
-            map.setView([p.lat, p.lon], 15);
-            L.popup().setLatLng([p.lat, p.lon]).setContent(`<strong>${p.nome}</strong><br>${p.endereco}`).openOn(map);
-          }
-        });
-
-        results.appendChild(item);
-
-        if (!isNaN(p.lat) && !isNaN(p.lon)) {
-          const marker = L.marker([p.lat, p.lon]).addTo(markersLayer);
-          marker.bindPopup(`<strong>${p.nome}</strong><br>${p.endereco}<br>${p.cidade}`);
-        }
-      });
-
-      // Ajustar visualização do mapa
-      const validos = lista.filter(p => !isNaN(p.lat) && !isNaN(p.lon));
-      if (validos.length) {
-        const bounds = L.latLngBounds(validos.map(p => [p.lat, p.lon]));
-        if (referencePoint) bounds.extend([referencePoint.lat, referencePoint.lon]);
-        map.fitBounds(bounds.pad(0.2));
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await res.json();
+        if (data.erro) throw new Error('CEP não encontrado.');
+        const fullAddress = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}, Brasil`;
+        let coords = await nominatimGeocode(fullAddress);
+        if (!coords) coords = await nominatimGeocode(`${data.localidade}, ${data.uf}, Brasil`);
+        if (!coords) throw new Error('Não foi possível localizar o endereço no mapa.');
+        setRef(coords.lat, coords.lng, fullAddress);
+      } catch (e) {
+        alert(e.message);
       }
     }
 
-    // ===== Buscar ponto de referência =====
-    async function buscarReferencia() {
-      const ref = document.getElementById('reference').value.trim();
-      if (!ref) {
-        referencePoint = null;
-        if (referenceMarker) { map.removeLayer(referenceMarker); referenceMarker = null; }
-        aplicarFiltros();
+    function buscarPorGps() {
+      if (!navigator.geolocation) {
+        alert('Geolocalização não é suportada pelo navegador.');
         return;
       }
-
-      setStatus('Localizando ponto de referência...');
-      const geo = await geocode(ref);
-      if (geo) {
-        referencePoint = geo;
-        if (referenceMarker) map.removeLayer(referenceMarker);
-        referenceMarker = L.marker([geo.lat, geo.lon], { icon: L.divIcon({ className: '', html: '📍', iconSize: [24, 24] }) })
-          .addTo(map)
-          .bindPopup('Ponto de referência');
-        setStatus('Ponto de referência localizado.');
-      } else {
-        referencePoint = null;
-        setStatus('Não foi possível localizar o ponto de referência.');
-      }
-      aplicarFiltros();
+      navigator.geolocation.getCurrentPosition(
+        async pos => {
+          let address = 'Sua localização atual';
+          try {
+            const rev = await nominatimReverse(pos.coords.latitude, pos.coords.longitude);
+            if (rev) address = rev;
+          } catch (e) {}
+          setRef(pos.coords.latitude, pos.coords.longitude, address);
+        },
+        err => alert('Não foi possível obter a localização: ' + err.message)
+      );
     }
 
-    // ===== Eventos =====
-    document.getElementById('searchBtn').addEventListener('click', async () => {
-      await buscarReferencia();
-    });
+    function setRef(lat, lng, address) {
+      const radius = parseInt(document.getElementById('radiusSlider').value) || 100;
+      refPoint = { lat, lng, address, radius };
+      if (refMarker) map.removeLayer(refMarker);
+      if (refCircle) map.removeLayer(refCircle);
+      refMarker = L.marker([lat, lng]).addTo(map).bindPopup(`<strong>${address}</strong><br>Raio: ${radius} km`).openPopup();
+      refCircle = L.circle([lat, lng], { radius: radius * 1000, color: '#003366', fillColor: '#003366', fillOpacity: 0.1, weight: 2 }).addTo(map);
+      map.flyTo([lat, lng], 11);
+      renderCards();
+      updateMarkers();
+    }
 
-    document.getElementById('clearBtn').addEventListener('click', () => {
-      document.getElementById('reference').value = '';
-      document.getElementById('city').value = '';
-      document.getElementById('program').value = '';
-      document.getElementById('weekend').value = '';
-      document.getElementById('night').value = '';
-      referencePoint = null;
-      if (referenceMarker) { map.removeLayer(referenceMarker); referenceMarker = null; }
-      aplicarFiltros();
-    });
+    function limparFiltros() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('cepInput').value = '';
+      document.getElementById('radiusSlider').value = 100;
+      document.getElementById('radiusValue').textContent = '100';
+      activeProgram = 'todos';
+      if (refMarker) { map.removeLayer(refMarker); refMarker = null; }
+      if (refCircle) { map.removeLayer(refCircle); refCircle = null; }
+      refPoint = null;
+      map.setView(INITIAL_VIEW, 11);
+      renderFilters();
+      renderCards();
+      updateMarkers();
+    }
 
-    // ===== Inicialização =====
-    carregarParceiros();
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function formatCep(cep) {
+      const c = cleanCep(cep);
+      if (c.length === 8) return c.slice(0, 5) + '-' + c.slice(5);
+      return cep || 'Não informado';
+    }
+
+    function cleanCep(cep) {
+      return String(cep || '').replace(/\D/g, '');
+    }
+
+    function normalize(str) {
+      return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function showProgress(current, total) {
+      const container = document.getElementById('progressContainer');
+      const text = document.getElementById('progressText');
+      const bar = document.getElementById('progressBar');
+      container.classList.remove('d-none');
+      text.textContent = `${current} de ${total}`;
+      const pct = total ? Math.round((current / total) * 100) : 0;
+      bar.style.width = `${pct}%`;
+      bar.setAttribute('aria-valuenow', pct);
+    }
+
+    function hideProgress() {
+      document.getElementById('progressContainer').classList.add('d-none');
+    }
+
+    function debounce(fn, ms) {
+      let t;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), ms);
+      };
+    }
   </script>
 </body>
 </html>
