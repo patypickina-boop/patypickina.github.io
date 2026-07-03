@@ -1,499 +1,545 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Localizador de Parceiros Sema MPDFT</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Localizador de Parceiros Sema MPDFT</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Arial, sans-serif; }
+  html, body { height: 100%; background: #f4f6f9; color: #1a1a1a; }
 
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  #app { display: flex; height: 100vh; width: 100%; overflow: hidden; }
 
-  <!-- Leaflet CSS/JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  /* Sidebar */
+  #sidebar {
+    width: 380px; min-width: 380px; height: 100%;
+    background: #ffffff; border-right: 1px solid #e1e5ea;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  #sidebar header {
+    padding: 18px 20px; background: #0b3d91; color: #fff;
+  }
+  #sidebar header h1 { font-size: 18px; font-weight: 700; line-height: 1.2; }
+  #sidebar header p { font-size: 12px; opacity: 0.85; margin-top: 4px; }
 
-  <!-- Fontes -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  .quick-filters {
+    display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px;
+    border-bottom: 1px solid #eef1f5; background: #fafbfc;
+  }
+  .quick-filters button {
+    border: 1px solid #d8dee8; background: #fff; color: #334155;
+    padding: 6px 10px; border-radius: 16px; font-size: 12px; cursor: pointer;
+    transition: all .15s ease;
+  }
+  .quick-filters button:hover { border-color: #0b3d91; color: #0b3d91; }
+  .quick-filters button.active { background: #0b3d91; color: #fff; border-color: #0b3d91; }
 
-  <style>
-    html, body { height: 100%; margin: 0; font-family: 'Roboto', sans-serif; }
-    #app { height: 100vh; display: flex; flex-direction: column; }
-    .scrollbar-thin::-webkit-scrollbar { width: 8px; }
-    .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
-    .scrollbar-thin::-webkit-scrollbar-track { background: #f1f5f9; }
-    .marker-pin { background: #1d4ed8; }
-    .badge-programa { font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 500; }
-  </style>
+  .search-box {
+    padding: 12px 16px; border-bottom: 1px solid #eef1f5;
+  }
+  .search-input-wrapper {
+    position: relative; display: flex; align-items: center;
+    border: 1px solid #d8dee8; border-radius: 8px; background: #fff; overflow: hidden;
+  }
+  .search-input-wrapper .icon { padding: 0 10px; color: #6b7280; font-size: 16px; }
+  .search-input-wrapper input {
+    flex: 1; border: none; outline: none; padding: 10px 4px; font-size: 13px; background: transparent;
+  }
+  .search-input-wrapper .gps-btn {
+    border: none; background: transparent; cursor: pointer; padding: 0 12px; color: #0b3d91; font-size: 16px;
+  }
+  .search-input-wrapper .gps-btn:hover { color: #082c6b; }
+
+  .cep-btn {
+    width: 100%; margin-top: 10px; padding: 12px; border: none; border-radius: 8px;
+    background: #0b3d91; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: background .15s ease;
+  }
+  .cep-btn:hover { background: #082c6b; }
+  .cep-btn:disabled { background: #9aa3b2; cursor: not-allowed; }
+
+  .toggle-filters { padding: 10px 16px; display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid #eef1f5; }
+  .toggle-filters label {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #334155; cursor: pointer;
+    background: #f1f5f9; padding: 5px 10px; border-radius: 14px;
+  }
+  .toggle-filters input { cursor: pointer; }
+
+  #status-bar { padding: 8px 16px; font-size: 12px; color: #6b7280; border-bottom: 1px solid #eef1f5; min-height: 32px; }
+  #status-bar.error { color: #b91c1c; }
+  #status-bar.success { color: #15803d; }
+
+  #list { flex: 1; overflow-y: auto; padding: 10px 12px; }
+  .card {
+    background: #fff; border: 1px solid #e5e9ef; border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 10px; cursor: pointer; transition: box-shadow .15s ease, transform .1s ease;
+  }
+  .card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.08); transform: translateY(-1px); }
+  .card .name { font-weight: 700; font-size: 14px; color: #0f172a; margin-bottom: 4px; }
+  .card .addr { font-size: 12px; color: #475569; margin-bottom: 4px; }
+  .card .hours { font-size: 12px; color: #334155; margin-bottom: 6px; }
+  .card .distance { font-size: 13px; font-weight: 700; color: #0b3d91; margin-bottom: 6px; }
+  .card .badges { display: flex; flex-wrap: wrap; gap: 5px; }
+  .badge { font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: 600; }
+  .badge.tipo { background: #dbeafe; color: #1e40af; }
+  .badge.fim-semana { background: #fef3c7; color: #92400e; }
+  .badge.noturno { background: #ede9fe; color: #5b21b6; }
+  .badge.saude { background: #dcfce7; color: #166534; }
+
+  #map { flex: 1; height: 100%; }
+
+  .loading { text-align: center; padding: 20px; color: #6b7280; font-size: 13px; }
+
+  @media (max-width: 768px) {
+    #app { flex-direction: column; }
+    #sidebar { width: 100%; min-width: 0; height: 55%; }
+    #map { height: 45%; }
+  }
+</style>
 </head>
-<body class="bg-slate-100">
-  <div id="app">
-    <!-- Header -->
-    <header class="bg-[#0b2a4a] text-white px-6 py-4 shadow-md z-10">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <circle cx="12" cy="11" r="3" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </div>
-        <div>
-          <h1 class="text-xl font-bold leading-tight">Localizador de Parceiros Sema MPDFT</h1>
-          <p class="text-sm text-blue-100">Encontre instituições parceiras</p>
-        </div>
-      </div>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <header>
+      <h1>Localizador de Parceiros Sema MPDFT</h1>
+      <p>Encontre instituições parceiras próximas a você</p>
     </header>
 
-    <!-- Conteúdo principal -->
-    <div class="flex flex-1 overflow-hidden">
-      <!-- Sidebar -->
-      <aside class="w-[420px] bg-white border-r border-slate-200 flex flex-col overflow-hidden">
-        <div class="p-4 border-b border-slate-200 space-y-4">
-          <!-- Filtros de Programa -->
-          <div>
-            <p class="text-xs font-semibold text-slate-500 uppercase mb-2">Programa</p>
-            <div id="filtro-programas" class="flex flex-wrap gap-2"></div>
-          </div>
-
-          <!-- Busca textual -->
-          <div>
-            <p class="text-xs font-semibold text-slate-500 uppercase mb-2">Busca</p>
-            <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <circle cx="11" cy="11" r="7" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3" />
-                </svg>
-              </span>
-              <input id="input-busca" type="text"
-                placeholder="Buscar por nome, endereço, CEP, horário ou dia"
-                class="w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" />
-              <button id="btn-gps" title="Usar minha localização"
-                class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 p-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="3" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 2v3m0 14v3M2 12h3m14 0h3" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Buscar por CEP/Endereço -->
-          <div class="flex items-center justify-between">
-            <button id="btn-cep" class="bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
-              Buscar por CEP/Endereço
-            </button>
-            <button id="btn-limpar" class="text-sm text-blue-700 hover:underline font-medium">Limpar</button>
-          </div>
-        </div>
-
-        <!-- Contador -->
-        <div class="px-4 py-2 bg-slate-50 border-b border-slate-200">
-          <p id="contador" class="text-sm text-slate-600">Carregando instituições...</p>
-        </div>
-
-        <!-- Lista de cards -->
-        <div id="lista" class="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-3"></div>
-      </aside>
-
-      <!-- Mapa -->
-      <main class="flex-1 relative">
-        <div id="mapa" class="absolute inset-0"></div>
-        <div id="status-geo" class="hidden absolute top-3 right-3 bg-white/95 shadow-lg rounded-lg px-3 py-2 text-xs text-slate-700 z-[1000] border border-slate-200"></div>
-      </main>
+    <div class="quick-filters" id="quickFilters">
+      <button data-filter="todos" class="active">Todos</button>
+      <button data-filter="Prestação de Serviços">Prestação de Serviços</button>
+      <button data-filter="Prestação Pecuniária">Prestação Pecuniária</button>
+      <button data-filter="Programa de Saúde">Programa de Saúde</button>
+      <button data-filter="Palestras">Palestras</button>
     </div>
-  </div>
 
-  <script>
-    // ===== Configurações =====
-    const SPREADSHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=0`;
-    const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
-    const CACHE_KEY = 'sema_mpdft_geocode_cache_v1';
+    <div class="search-box">
+      <div class="search-input-wrapper">
+        <span class="icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar por nome, endereço, CEP, horário ou dia" />
+        <button class="gps-btn" id="gpsBtn" title="Usar minha localização">📍</button>
+      </div>
+      <button class="cep-btn" id="cepBtn">Buscar por CEP/Endereço</button>
+    </div>
 
-    const PROGRAMAS = [
-      'Todos',
-      'Prestação de Serviços',
-      'Prestação Pecuniária',
-      'Programa de Saúde',
-      'Palestras'
-    ];
+    <div class="toggle-filters">
+      <label><input type="checkbox" id="filterFimSemana" /> Fim de Semana</label>
+      <label><input type="checkbox" id="filterNoturno" /> Noturno</label>
+    </div>
 
-    const CORES_PROGRAMAS = {
-      'Prestação de Serviços': 'bg-blue-100 text-blue-800',
-      'Prestação Pecuniária': 'bg-emerald-100 text-emerald-800',
-      'Programa de Saúde': 'bg-rose-100 text-rose-800',
-      'Palestras': 'bg-amber-100 text-amber-800'
-    };
+    <div id="status-bar">Carregando instituições...</div>
 
-    // ===== Estado =====
-    let instituicoes = [];
-    let programaSelecionado = 'Todos';
-    let termoBusca = '';
-    let origemUsuario = null; // {lat, lng}
-    let mapa = null;
-    let marcadores = [];
-    let marcadorOrigem = null;
+    <div id="list">
+      <div class="loading">Aguarde, carregando...</div>
+    </div>
+  </aside>
 
-    // ===== Cache de geocodificação =====
-    function carregarCache() {
-      try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; }
-      catch { return {}; }
-    }
-    function salvarCache(cache) {
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
-    }
+  <div id="map"></div>
+</div>
 
-    // ===== Inicialização do mapa =====
-    function initMapa() {
-      mapa = L.map('mapa', { zoomControl: true }).setView([-15.7801, -47.9292], 11);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap',
-        maxZoom: 19
-      }).addTo(mapa);
-    }
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const SHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 
-    // ===== Carregar dados da planilha =====
-    async function carregarPlanilha() {
-      try {
-        const resp = await fetch(SHEET_URL);
-        const text = await resp.text();
-        const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
-        const rows = json.table.rows || [];
-        const cols = json.table.cols || [];
+const GEOCACHE_KEY = 'sema_mpdft_geocache_v1';
+const REF_KEY = 'sema_mpdft_ref_v1';
 
-        const header = cols.map(c => (c.label || '').trim());
-        const findIdx = (nomes) => {
-          const lower = nomes.map(n => n.toLowerCase());
-          return header.findIndex(h => lower.includes(h.toLowerCase()));
-        };
+let institutions = [];
+let map, markersLayer;
+let referencePoint = null;
+let referenceMarker = null;
+let activeQuickFilter = 'todos';
+let searchText = '';
+let filterFimSemana = false;
+let filterNoturno = false;
 
-        const idxNome = findIdx(['nome', 'instituicao', 'razao social']);
-        const idxEnd = findIdx(['endereco', 'endereço', 'rua']);
-        const idxCep = findIdx(['cep']);
-        const idxBairro = findIdx(['bairro']);
-        const idxCidade = findIdx(['cidade', 'municipio']);
-        const idxEstado = findIdx(['estado', 'uf']);
-        const idxHorario = findIdx(['horario', 'horário', 'funcionamento']);
-        const idxDia = findIdx(['dia', 'dias']);
-        const idxPrograma = findIdx(['programa']);
-        const idxLat = findIdx(['latitude', 'lat']);
-        const idxLng = findIdx(['longitude', 'lng', 'lon']);
+const statusEl = document.getElementById('status-bar');
+const listEl = document.getElementById('list');
+const searchInput = document.getElementById('searchInput');
+const cepBtn = document.getElementById('cepBtn');
+const gpsBtn = document.getElementById('gpsBtn');
 
-        instituicoes = rows.map((r, i) => {
-          const c = r.c || [];
-          const val = (idx) => idx >= 0 && c[idx] ? (c[idx].v || '').toString().trim() : '';
-          return {
-            id: i,
-            nome: val(idxNome),
-            endereco: val(idxEnd),
-            cep: val(idxCep),
-            bairro: val(idxBairro),
-            cidade: val(idxCidade),
-            estado: val(idxEstado),
-            horario: val(idxHorario),
-            dia: val(idxDia),
-            programa: val(idxPrograma),
-            lat: parseFloat(val(idxLat)) || null,
-            lng: parseFloat(val(idxLng)) || null,
-            latOk: false,
-            lngOk: false
-          };
-        }).filter(it => it.nome || it.endereco);
+/* ---------- Map ---------- */
+function initMap() {
+  map = L.map('map').setView([-15.7939, -47.8828], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap', maxZoom: 19
+  }).addTo(map);
+  markersLayer = L.layerGroup().addTo(map);
+}
 
-        // Validar lat/lng existentes
-        instituicoes.forEach(it => {
-          if (it.lat !== null && it.lng !== null &&
-              isFinite(it.lat) && isFinite(it.lng) &&
-              Math.abs(it.lat) <= 90 && Math.abs(it.lng) <= 180) {
-            it.latOk = true;
-            it.lngOk = true;
-          }
-        });
+/* ---------- Geocoding cache ---------- */
+function getGeoCache() {
+  try { return JSON.parse(localStorage.getItem(GEOCACHE_KEY) || '{}'); }
+  catch { return {}; }
+}
+function setGeoCacheEntry(key, value) {
+  const cache = getGeoCache();
+  cache[key] = value;
+  localStorage.setItem(GEOCACHE_KEY, JSON.stringify(cache));
+}
 
-        await geocodificarFaltantes();
-        renderizar();
-      } catch (err) {
-        console.error('Erro ao carregar planilha:', err);
-        document.getElementById('contador').textContent = 'Erro ao carregar a planilha.';
+/* ---------- Nominatim geocoding ---------- */
+async function nominatimSearch(query) {
+  const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' + encodeURIComponent(query);
+  const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+  if (!res.ok) throw new Error('Nominatim HTTP ' + res.status);
+  const data = await res.json();
+  if (!data || data.length === 0) return null;
+  return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name };
+}
+
+async function geocodeReference(rawInput) {
+  const input = (rawInput || '').trim();
+  if (!input) return null;
+
+  // 1) Tenta com sufixo DF/Brasil
+  try {
+    const r = await nominatimSearch(input + ', Distrito Federal, Brasil');
+    if (r) return r;
+  } catch (e) { /* continua */ }
+
+  // 2) Tenta apenas o CEP (se for numérico/CEP-like)
+  const cepOnly = input.match(/\d{5}-?\d{3}/);
+  if (cepOnly) {
+    try {
+      const r = await nominatimSearch(cepOnly[0]);
+      if (r) return r;
+    } catch (e) { /* continua */ }
+  }
+
+  // 3) Tenta o input puro
+  try {
+    const r = await nominatimSearch(input);
+    if (r) return r;
+  } catch (e) { /* continua */ }
+
+  return null;
+}
+
+async function geocodeInstitution(address, name) {
+  const key = (address + '|' + name).toLowerCase().trim();
+  const cache = getGeoCache();
+  if (cache[key]) return cache[key];
+
+  const queries = [
+    (address + ', Distrito Federal, Brasil'),
+    (name + ', Distrito Federal, Brasil'),
+    (address + ', Brasil')
+  ];
+
+  for (const q of queries) {
+    try {
+      const r = await nominatimSearch(q);
+      if (r) {
+        setGeoCacheEntry(key, r);
+        return r;
       }
-    }
+    } catch (e) { /* tenta próximo */ }
+    await sleep(1100); // respeitar rate limit do Nominatim
+  }
+  return null;
+}
 
-    // ===== Geocodificação via Nominatim =====
-    function montarEndereco(it) {
-      const partes = [it.endereco, it.bairro, it.cidade, it.estado, it.cep].filter(Boolean);
-      return partes.join(', ');
-    }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-    async function geocodificarFaltantes() {
-      const cache = carregarCache();
-      const status = document.getElementById('status-geo');
-      let pendentes = instituicoes.filter(it => !it.latOk || !it.lngOk);
-      if (pendentes.length === 0) return;
+/* ---------- Distance ---------- */
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
 
-      status.classList.remove('hidden');
-      status.textContent = `Geocodificando endereços... 0/${pendentes.length}`;
+function formatKm(km) {
+  if (km == null || isNaN(km)) return '';
+  return km.toFixed(1).replace('.', ',') + ' km';
+}
 
-      let count = 0;
-      for (const it of pendentes) {
-        const chave = montarEndereco(it).toLowerCase();
-        if (!chave) { count++; continue; }
+/* ---------- Sheet parsing ---------- */
+async function loadSheet() {
+  const res = await fetch(SHEET_URL);
+  const text = await res.text();
+  const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
+  const cols = json.table.cols.map(c => (c.label || '').trim().toLowerCase());
+  const rows = json.table.rows;
 
-        if (cache[chave]) {
-          it.lat = cache[chave].lat;
-          it.lng = cache[chave].lng;
-          it.latOk = true;
-          it.lngOk = true;
-        } else {
-          try {
-            const q = encodeURIComponent(montarEndereco(it));
-            const url = `${NOMINATIM_URL}?format=json&q=${q}&limit=1&countrycodes=br`;
-            const r = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
-            const data = await r.json();
-            if (data && data.length > 0) {
-              it.lat = parseFloat(data[0].lat);
-              it.lng = parseFloat(data[0].lon);
-              it.latOk = true;
-              it.lngOk = true;
-              cache[chave] = { lat: it.lat, lng: it.lng };
-              salvarCache(cache);
-            }
-            // Respeitar limite de uso do Nominatim
-            await new Promise(res => setTimeout(res, 1100));
-          } catch (e) {
-            console.warn('Falha ao geocodificar:', chave, e);
-          }
-        }
-        count++;
-        status.textContent = `Geocodificando endereços... ${count}/${pendentes.length}`;
-      }
-      status.classList.add('hidden');
-    }
-
-    // ===== Filtros =====
-    function filtrar() {
-      let lista = instituicoes.slice();
-
-      if (programaSelecionado !== 'Todos') {
-        lista = lista.filter(it =>
-          it.programa && it.programa.toLowerCase().includes(programaSelecionado.toLowerCase())
-        );
-      }
-
-      if (termoBusca.trim()) {
-        const t = termoBusca.toLowerCase().trim();
-        lista = lista.filter(it =>
-          [it.nome, it.endereco, it.cep, it.bairro, it.cidade, it.horario, it.dia, it.programa]
-            .filter(Boolean)
-            .some(v => v.toLowerCase().includes(t))
-        );
-      }
-
-      // Ordenação por proximidade (sem limite de raio)
-      if (origemUsuario) {
-        lista = lista
-          .filter(it => it.latOk && it.lngOk)
-          .map(it => ({ ...it, _dist: distanciaKm(origemUsuario.lat, origemUsuario.lng, it.lat, it.lng) }))
-          .sort((a, b) => a._dist - b._dist);
-      }
-
-      return lista;
-    }
-
-    function distanciaKm(lat1, lng1, lat2, lng2) {
-      const R = 6371;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLng = (lng2 - lng1) * Math.PI / 180;
-      const a = Math.sin(dLat/2)**2 +
-                Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    }
-
-    // ===== Renderização =====
-    function renderizar() {
-      const lista = filtrar();
-      const cont = document.getElementById('contador');
-      cont.textContent = `${lista.length} instituição(ões) encontrada(s)`;
-
-      const divLista = document.getElementById('lista');
-      divLista.innerHTML = '';
-
-      lista.forEach(it => {
-        const card = document.createElement('div');
-        card.className = 'bg-white border border-slate-200 rounded-lg p-3 hover:shadow-md transition cursor-pointer';
-
-        const programas = (it.programa || '').split(/[,;|]/).map(p => p.trim()).filter(Boolean);
-        const badges = programas.map(p => {
-          const cor = CORES_PROGRAMAS[p] || 'bg-slate-100 text-slate-700';
-          return `<span class="badge-programa ${cor}">${escapeHtml(p)}</span>`;
-        }).join(' ');
-
-        const distTxt = (origemUsuario && it._dist != null)
-          ? `<span class="text-xs text-blue-700 font-medium">${it._dist.toFixed(1)} km</span>`
-          : '';
-
-        card.innerHTML = `
-          <div class="flex items-start justify-between gap-2">
-            <h3 class="font-bold text-slate-800 text-sm leading-snug">${escapeHtml(it.nome || 'Sem nome')}</h3>
-            ${distTxt}
-          </div>
-          ${it.endereco ? `<p class="text-xs text-slate-600 mt-1">${escapeHtml(it.endereco)}${it.bairro ? ' - ' + escapeHtml(it.bairro) : ''}${it.cidade ? ', ' + escapeHtml(it.cidade) : ''}</p>` : ''}
-          ${(it.horario || it.dia) ? `<p class="text-xs text-slate-500 mt-1">${escapeHtml([it.dia, it.horario].filter(Boolean).join(' • '))}</p>` : ''}
-          ${badges ? `<div class="flex flex-wrap gap-1 mt-2">${badges}</div>` : ''}
-        `;
-
-        card.addEventListener('click', () => {
-          if (it.latOk && it.lngOk) {
-            mapa.setView([it.lat, it.lng], 15);
-            mapa.eachLayer(l => {
-              if (l instanceof L.CircleMarker && l.getLatLng().lat === it.lat && l.getLatLng().lng === it.lng) {
-                l.openPopup();
-              }
-            });
-          }
-        });
-
-        divLista.appendChild(card);
-      });
-
-      renderizarMarcadores(lista);
-    }
-
-    function renderizarMarcadores(lista) {
-      marcadores.forEach(m => mapa.removeLayer(m));
-      marcadores = [];
-
-      lista.forEach(it => {
-        if (!it.latOk || !it.lngOk) return;
-        const marker = L.circleMarker([it.lat, it.lng], {
-          radius: 8,
-          color: '#1d4ed8',
-          fillColor: '#1d4ed8',
-          fillOpacity: 0.85,
-          weight: 2
-        }).addTo(mapa);
-
-        const programas = (it.programa || '').split(/[,;|]/).map(p => p.trim()).filter(Boolean);
-        marker.bindPopup(`
-          <strong>${escapeHtml(it.nome || 'Sem nome')}</strong><br/>
-          ${escapeHtml(it.endereco || '')}<br/>
-          ${it.horario ? escapeHtml(it.horario) : ''}<br/>
-          <em>${escapeHtml(programas.join(', '))}</em>
-        `);
-        marcadores.push(marker);
-      });
-
-      if (marcadores.length > 0 && !origemUsuario) {
-        const group = L.featureGroup(marcadores);
-        mapa.fitBounds(group.getBounds().pad(0.1));
-      }
-    }
-
-    // ===== Geocodificar origem (CEP/Endereço) =====
-    async function buscarOrigem() {
-      const termo = document.getElementById('input-busca').value.trim();
-      if (!termo) {
-        alert('Digite um CEP ou endereço para buscar.');
-        return;
-      }
-      const status = document.getElementById('status-geo');
-      status.classList.remove('hidden');
-      status.textContent = 'Localizando endereço...';
-      try {
-        const q = encodeURIComponent(termo.includes('Brasil') ? termo : termo + ', Brasil');
-        const url = `${NOMINATIM_URL}?format=json&q=${q}&limit=1&countrycodes=br`;
-        const r = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
-        const data = await r.json();
-        if (data && data.length > 0) {
-          origemUsuario = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-          if (marcadorOrigem) mapa.removeLayer(marcadorOrigem);
-          marcadorOrigem = L.marker([origemUsuario.lat, origemUsuario.lng], {
-            icon: L.divIcon({
-              className: '',
-              html: '<div style="background:#ef4444;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 4px #000"></div>',
-              iconSize: [18,18], iconAnchor: [9,9]
-            })
-          }).addTo(mapa).bindPopup('Sua localização');
-          mapa.setView([origemUsuario.lat, origemUsuario.lng], 12);
-          renderizar();
-        } else {
-          alert('Endereço não encontrado.');
-        }
-      } catch (e) {
-        alert('Erro ao buscar endereço.');
-      } finally {
-        status.classList.add('hidden');
-      }
-    }
-
-    function limparTudo() {
-      document.getElementById('input-busca').value = '';
-      termoBusca = '';
-      origemUsuario = null;
-      if (marcadorOrigem) { mapa.removeLayer(marcadorOrigem); marcadorOrigem = null; }
-      renderizar();
-    }
-
-    // ===== Util =====
-    function escapeHtml(s) {
-      return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-
-    function renderBotoesPrograma() {
-      const cont = document.getElementById('filtro-programas');
-      cont.innerHTML = '';
-      PROGRAMAS.forEach(p => {
-        const btn = document.createElement('button');
-        const ativo = p === programaSelecionado;
-        btn.className = `text-xs font-medium px-3 py-1.5 rounded-full border transition ${ativo ? 'bg-blue-700 text-white border-blue-700' : 'bg-white text-slate-600 border-slate-300 hover:border-blue-400'}`;
-        btn.textContent = p;
-        btn.addEventListener('click', () => {
-          programaSelecionado = p;
-          renderBotoesPrograma();
-          renderizar();
-        });
-        cont.appendChild(btn);
-      });
-    }
-
-    // ===== Eventos =====
-    document.getElementById('input-busca').addEventListener('input', (e) => {
-      termoBusca = e.target.value;
-      renderizar();
+  return rows.map(r => {
+    const obj = {};
+    (r.c || []).forEach((cell, i) => {
+      const label = cols[i] || ('col' + i);
+      obj[label] = cell && cell.v != null ? String(cell.v) : '';
     });
-    document.getElementById('btn-cep').addEventListener('click', buscarOrigem);
-    document.getElementById('btn-limpar').addEventListener('click', limparTudo);
-    document.getElementById('btn-gps').addEventListener('click', () => {
-      if (!navigator.geolocation) { alert('Geolocalização não suportada.'); return; }
-      const status = document.getElementById('status-geo');
-      status.classList.remove('hidden');
-      status.textContent = 'Obtendo sua localização...';
-      navigator.geolocation.getCurrentPosition(pos => {
-        origemUsuario = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        if (marcadorOrigem) mapa.removeLayer(marcadorOrigem);
-        marcadorOrigem = L.marker([origemUsuario.lat, origemUsuario.lng], {
-          icon: L.divIcon({
-            className: '',
-            html: '<div style="background:#ef4444;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 4px #000"></div>',
-            iconSize: [18,18], iconAnchor: [9,9]
-          })
-        }).addTo(mapa).bindPopup('Sua localização');
-        mapa.setView([origemUsuario.lat, origemUsuario.lng], 12);
-        status.classList.add('hidden');
-        renderizar();
-      }, () => {
-        status.classList.add('hidden');
-        alert('Não foi possível obter sua localização.');
-      });
+    return obj;
+  }).filter(r => Object.keys(r).length > 0);
+}
+
+function normalizeInstitution(row) {
+  const get = (...keys) => {
+    for (const k of keys) {
+      const lk = k.toLowerCase();
+      if (row[lk] != null && row[lk] !== '') return row[lk];
+    }
+    return '';
+  };
+
+  const name = get('nome', 'instituicao', 'razao social', 'parceiro');
+  const address = get('endereco', 'endereço', 'logradouro', 'local');
+  const hours = get('horario', 'horário', 'funcionamento', 'hora');
+  const day = get('dia', 'dias', 'data');
+  const type = get('tipo', 'categoria', 'modalidade', 'prestacao');
+  const cep = get('cep');
+  const latRaw = get('latitude', 'lat');
+  const lonRaw = get('longitude', 'lon', 'lng', 'long');
+
+  let lat = parseFloat(latRaw), lon = parseFloat(lonRaw);
+  if (isNaN(lat) || isNaN(lon)) { lat = null; lon = null; }
+
+  const fullText = (name + ' ' + address + ' ' + hours + ' ' + day + ' ' + type + ' ' + cep).toLowerCase();
+  const isFimSemana = /s[aá]bado|domingo|s[aá]b|dom|fim de semana|fds/.test(fullText);
+  const isNoturno = /noturno|noite|19h|20h|21h|22h|23h|18h/.test(fullText);
+
+  return {
+    name: name || 'Sem nome',
+    address: address,
+    cep: cep,
+    hours: [hours, day].filter(Boolean).join(' - '),
+    type: type,
+    lat, lon,
+    fimSemana: isFimSemana,
+    noturno: isNoturno,
+    distance: null
+  };
+}
+
+/* ---------- Geocode all institutions ---------- */
+async function geocodeInstitutions() {
+  let done = 0;
+  for (const inst of institutions) {
+    if (inst.lat == null || inst.lon == null) {
+      const geo = await geocodeInstitution(inst.address, inst.name);
+      if (geo) { inst.lat = geo.lat; inst.lon = geo.lon; }
+    }
+    done++;
+    statusEl.textContent = `Geocodificando endereços... ${done}/${institutions.length}`;
+    statusEl.className = '';
+    if (done % 5 === 0) renderList(); // atualiza parcialmente
+  }
+}
+
+/* ---------- Filtering ---------- */
+function applyFilters() {
+  let list = institutions.slice();
+
+  if (activeQuickFilter !== 'todos') {
+    list = list.filter(i => (i.type || '').toLowerCase().includes(activeQuickFilter.toLowerCase()));
+  }
+
+  if (filterFimSemana) list = list.filter(i => i.fimSemana);
+  if (filterNoturno) list = list.filter(i => i.noturno);
+
+  if (searchText) {
+    const q = searchText.toLowerCase();
+    list = list.filter(i =>
+      (i.name + ' ' + i.address + ' ' + i.hours + ' ' + i.type + ' ' + i.cep).toLowerCase().includes(q)
+    );
+  }
+
+  // Sem limite de raio: apenas ordena por distância se houver ponto de referência
+  if (referencePoint) {
+    list = list.map(i => {
+      if (i.lat != null && i.lon != null) {
+        i.distance = haversineKm(referencePoint.lat, referencePoint.lon, i.lat, i.lon);
+      } else {
+        i.distance = null;
+      }
+      return i;
+    });
+    list.sort((a, b) => {
+      if (a.distance == null) return 1;
+      if (b.distance == null) return -1;
+      return a.distance - b.distance;
+    });
+  }
+
+  return list;
+}
+
+/* ---------- Render ---------- */
+function renderList() {
+  const list = applyFilters();
+  listEl.innerHTML = '';
+
+  if (list.length === 0) {
+    listEl.innerHTML = '<div class="loading">Nenhuma instituição encontrada com os filtros atuais.</div>';
+    renderMarkers(list);
+    return;
+  }
+
+  list.forEach(inst => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const distHtml = (referencePoint && inst.distance != null)
+      ? `<div class="distance">📍 ${formatKm(inst.distance)}</div>` : '';
+
+    const badges = [];
+    if (inst.type) badges.push(`<span class="badge tipo">${escapeHtml(inst.type)}</span>`);
+    if (inst.fimSemana) badges.push('<span class="badge fim-semana">Fim de Semana</span>');
+    if (inst.noturno) badges.push('<span class="badge noturno">Noturno</span>');
+
+    card.innerHTML = `
+      <div class="name">${escapeHtml(inst.name)}</div>
+      ${inst.address ? `<div class="addr">${escapeHtml(inst.address)}</div>` : ''}
+      ${inst.hours ? `<div class="hours">🕒 ${escapeHtml(inst.hours)}</div>` : ''}
+      ${distHtml}
+      <div class="badges">${badges.join('')}</div>
+    `;
+
+    card.addEventListener('click', () => {
+      if (inst.lat != null && inst.lon != null) {
+        map.setView([inst.lat, inst.lon], 15);
+        L.popup().setLatLng([inst.lat, inst.lon])
+          .setContent(`<strong>${escapeHtml(inst.name)}</strong><br>${escapeHtml(inst.address || '')}`)
+          .openOn(map);
+      }
     });
 
-    // ===== Inicialização =====
-    window.addEventListener('DOMContentLoaded', () => {
-      initMapa();
-      renderBotoesPrograma();
-      carregarPlanilha();
+    listEl.appendChild(card);
+  });
+
+  renderMarkers(list);
+}
+
+function renderMarkers(list) {
+  markersLayer.clearLayers();
+  list.forEach(inst => {
+    if (inst.lat != null && inst.lon != null) {
+      const m = L.marker([inst.lat, inst.lon]);
+      m.bindPopup(`<strong>${escapeHtml(inst.name)}</strong><br>${escapeHtml(inst.address || '')}` +
+        (inst.distance != null ? `<br><b>${formatKm(inst.distance)}</b>` : ''));
+      m.addTo(markersLayer);
+    }
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------- Reference point ---------- */
+function setReferencePoint(lat, lon, label) {
+  referencePoint = { lat, lon };
+  if (referenceMarker) map.removeLayer(referenceMarker);
+  referenceMarker = L.marker([lat, lon], { icon: L.divIcon({ className: 'ref-icon', html: '📍', iconSize: [24,24] }) })
+    .addTo(map);
+  map.setView([lat, lon], 13);
+  renderList();
+  statusEl.textContent = 'Ponto de referência: ' + (label || `${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+  statusEl.className = 'success';
+}
+
+/* ---------- Events ---------- */
+async function handleCepSearch() {
+  const val = searchInput.value.trim();
+  if (!val) {
+    statusEl.textContent = 'Digite um CEP ou endereço para buscar.';
+    statusEl.className = 'error';
+    return;
+  }
+  cepBtn.disabled = true;
+  cepBtn.textContent = 'Buscando...';
+  statusEl.textContent = 'Geocodificando ponto de referência...';
+  statusEl.className = '';
+
+  try {
+    const geo = await geocodeReference(val);
+    if (geo) {
+      setReferencePoint(geo.lat, geo.lon, geo.display);
+    } else {
+      statusEl.textContent = 'Não foi possível localizar o CEP/endereço informado. Tente novamente.';
+      statusEl.className = 'error';
+    }
+  } catch (e) {
+    statusEl.textContent = 'Erro na busca: ' + e.message;
+    statusEl.className = 'error';
+  } finally {
+    cepBtn.disabled = false;
+    cepBtn.textContent = 'Buscar por CEP/Endereço';
+  }
+}
+
+function handleGps() {
+  if (!navigator.geolocation) {
+    statusEl.textContent = 'Geolocalização não suportada neste navegador.';
+    statusEl.className = 'error';
+    return;
+  }
+  statusEl.textContent = 'Obtendo sua localização...';
+  statusEl.className = '';
+  navigator.geolocation.getCurrentPosition(
+    pos => setReferencePoint(pos.coords.latitude, pos.coords.longitude, 'Minha localização'),
+    err => { statusEl.textContent = 'Erro ao obter localização: ' + err.message; statusEl.className = 'error'; },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+searchInput.addEventListener('input', () => {
+  searchText = searchInput.value.trim();
+  renderList();
+});
+searchInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleCepSearch();
+});
+cepBtn.addEventListener('click', handleCepSearch);
+gpsBtn.addEventListener('click', handleGps);
+
+document.querySelectorAll('#quickFilters button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#quickFilters button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeQuickFilter = btn.dataset.filter;
+    renderList();
+  });
+});
+
+document.getElementById('filterFimSemana').addEventListener('change', e => {
+  filterFimSemana = e.target.checked; renderList();
+});
+document.getElementById('filterNoturno').addEventListener('change', e => {
+  filterNoturno = e.target.checked; renderList();
+});
+
+/* ---------- Init ---------- */
+async function init() {
+  initMap();
+  try {
+    statusEl.textContent = 'Carregando instituições da planilha...';
+    const rows = await loadSheet();
+    institutions = rows.map(normalizeInstitution);
+    statusEl.textContent = `${institutions.length} instituições carregadas. Geocodificando...`;
+    renderList();
+    // Geocodifica em background (não bloqueia uso)
+    geocodeInstitutions().then(() => {
+      statusEl.textContent = `${institutions.length} instituições prontas. Digite um CEP ou use o GPS.`;
+      statusEl.className = 'success';
+      renderList();
+    }).catch(() => {
+      statusEl.textContent = 'Algumas instituições não puderam ser geocodificadas.';
+      statusEl.className = 'error';
     });
-  </script>
+  } catch (e) {
+    statusEl.textContent = 'Erro ao carregar planilha: ' + e.message;
+    statusEl.className = 'error';
+    listEl.innerHTML = '<div class="loading">Falha ao carregar dados.</div>';
+  }
+}
+
+init();
+</script>
 </body>
 </html>
