@@ -6,60 +6,59 @@
     <title>Localizador Parceiros Sema MPDFT</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --bg: #ffffff; --text: #000000; --border: #eeeeee; --accent: #004a8e; --card-bg: #fcfcfc; }
-        body.high-contrast { --bg: #ffffff; --text: #000000; --border: #000000; --accent: #000000; --card-bg: #ffffff; }
-        
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body, html { height: 100%; background: var(--bg); color: var(--text); overflow: hidden; }
+        body, html { height: 100%; background: #ffffff; color: #000000; overflow: hidden; }
         
         header { 
             background: #fff; padding: 10px 25px; display: flex; align-items: center; 
-            justify-content: space-between; border-bottom: 2px solid var(--border); z-index: 1000; height: 75px;
+            gap: 20px; border-bottom: 1px solid #eee; z-index: 1000; height: 75px;
         }
-        .header-left { display: flex; align-items: center; gap: 15px; }
-        header img { height: 55px; width: auto; }
+        header img { height: 55px; width: auto; border-radius: 8px; }
         header h1 { font-size: 1.4rem; font-weight: 700; color: #000; }
-        
-        .header-btns { display: flex; gap: 10px; }
-        .btn-header { 
-            background: #000; color: #fff; border: none; padding: 8px 15px; 
-            border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 700;
-        }
 
         #main { display: flex; height: calc(100vh - 75px); }
         #sidebar { 
-            width: 400px; background: var(--bg); display: flex; flex-direction: column; 
-            border-right: 1px solid var(--border); box-shadow: 2px 0 5px rgba(0,0,0,0.05); 
+            width: 400px; background: #fff; display: flex; flex-direction: column; 
+            border-right: 1px solid #eee; box-shadow: 2px 0 5px rgba(0,0,0,0.03); 
         }
         
-        .search-area { padding: 20px; border-bottom: 1px solid var(--border); }
+        .search-area { padding: 20px; border-bottom: 1px solid #eee; }
         .search-area input { 
-            width: 100%; padding: 12px; border: 2px solid var(--border); 
-            border-radius: 8px; font-size: 0.95rem; outline: none; color: #000; background: #fff; margin-bottom: 10px;
+            width: 100%; padding: 12px 15px; border: 1px solid #ddd; 
+            border-radius: 10px; font-size: 1rem; outline: none; color: #000; background: #f9f9f9;
         }
+        .search-area input:focus { border-color: #004a8e; background: #fff; }
         .btn-clear { 
-            background: none; border: none; color: var(--accent); font-size: 0.8rem; 
-            font-weight: 600; cursor: pointer; text-decoration: underline;
+            background: none; border: none; color: #666; font-size: 0.8rem; 
+            margin-top: 10px; cursor: pointer; text-decoration: underline;
         }
 
         #results { flex: 1; overflow-y: auto; padding: 15px; }
         .card { 
-            background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; 
+            background: #fff; border: 1px solid #eee; border-radius: 12px; 
             padding: 18px; margin-bottom: 15px; transition: 0.2s; position: relative;
         }
-        .card:hover { border-color: var(--accent); box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        .card h3 { font-size: 1.05rem; margin-bottom: 6px; font-weight: 700; color: #000; padding-right: 30px; }
-        .card p { font-size: 0.85rem; margin-bottom: 6px; color: #444; line-height: 1.4; }
-        .card .hours { font-weight: 600; color: #222; border-top: 1px solid var(--border); padding-top: 8px; margin-top: 8px; }
-        .dist-tag { color: var(--accent); font-weight: 700; font-size: 0.8rem; display: block; margin-bottom: 8px; }
+        .card:hover { border-color: #004a8e; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .card h3 { font-size: 1.05rem; margin-bottom: 6px; font-weight: 700; color: #000; padding-right: 35px; }
+        .card p { font-size: 0.85rem; margin-bottom: 6px; color: #333; line-height: 1.4; }
+        .card .hours { font-weight: 600; color: #000; margin-top: 8px; display: flex; align-items: center; gap: 5px; }
+        .dist-tag { color: #004a8e; font-weight: 700; font-size: 0.8rem; display: block; margin-bottom: 8px; }
         
-        .btn-view-map { 
-            position: absolute; top: 18px; right: 18px; background: none; border: none; 
-            color: var(--accent); cursor: pointer; font-size: 1.2rem; title: "Ver no Mapa";
+        .badge { 
+            display: inline-block; padding: 3px 10px; border-radius: 20px; 
+            font-size: 0.75rem; font-weight: 600; margin-right: 5px; margin-top: 5px;
+            background: #eef2fb; color: #004a8e;
         }
 
+        .btn-view-map { 
+            position: absolute; top: 18px; right: 18px; background: #f0f4f8; border: none; 
+            color: #004a8e; cursor: pointer; width: 30px; height: 30px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 1rem;
+        }
+        .btn-view-map:hover { background: #004a8e; color: #fff; }
+
         #map { flex: 1; height: 100%; background: #f0f0f0; }
-        .status-bar { padding: 8px 20px; font-size: 0.75rem; color: #777; background: #f9f9f9; border-bottom: 1px solid var(--border); }
+        .status-bar { padding: 8px 20px; font-size: 0.75rem; color: #888; background: #fcfcfc; border-bottom: 1px solid #eee; }
 
         @media (max-width: 768px) {
             #main { flex-direction: column; }
@@ -71,16 +70,11 @@
 <body>
 
 <header>
-    <div class="header-left">
-        <img src="https://adapta-one-prod.s3.sa-east-1.amazonaws.com/patypickina%40gmail.com/png/image-019f341b-1f13-710f-b3d7-0590792847b0.png" alt="Logo Sema">
-        <h1>Localizador Parceiros Sema MPDFT</h1>
-    </div>
-    <div class="header-btns">
-        <button class="btn-header" onclick="toggleContrast()">ALTO CONTRASTE</button>
-    </div>
+    <img src="https://generated-images.adapta-one-prod.s3.sa-east-1.amazonaws.com/patypickina%40gmail.com/019c71f1-bb9c-73cf-a990-1d5afcfa5668/2026-07-05T23-08-40-716Z_Original_user_intent_A_professional_and_minimalis.png" alt="Logo Sema">
+    <h1>Localizador Parceiros Sema MPDFT</h1>
 </header>
 
-<div class="status-bar" id="status">Carregando dados...</div>
+<div class="status-bar" id="status">Carregando parceiros...</div>
 
 <div id="app">
     <div id="main">
@@ -105,7 +99,6 @@
     let map, markersLayer;
     let userLoc = null;
 
-    function toggleContrast() { document.body.classList.toggle('high-contrast'); }
     function clearFilters() { document.getElementById('searchInput').value = ''; render(); }
 
     function initMap() {
@@ -126,8 +119,8 @@
                 nome: r.c[0]?.v || 'Sem Nome',
                 endereco: r.c[1]?.v || '',
                 cidade: r.c[2]?.v || '',
+                horario: r.c[3]?.v || 'Horário não informado',
                 programa: r.c[4]?.v || '',
-                horario: r.c[3]?.v || 'Não informado',
                 obs: r.c[8]?.v || '',
                 lat: null, lng: null, dist: 9999
             })).filter(p => p.nome !== 'Sem Nome');
@@ -141,7 +134,7 @@
     }
 
     async function geocodeAll() {
-        const cache = JSON.parse(localStorage.getItem('sema_cache_v6') || '{}');
+        const cache = JSON.parse(localStorage.getItem('sema_cache_v8') || '{}');
         for (let p of partners) {
             const key = p.endereco.toLowerCase().trim();
             if (cache[key]) { p.lat = cache[key].lat; p.lng = cache[key].lng; }
@@ -157,7 +150,7 @@
                 await new Promise(r => setTimeout(r, 1000));
             }
         }
-        localStorage.setItem('sema_cache_v6', JSON.stringify(cache));
+        localStorage.setItem('sema_cache_v8', JSON.stringify(cache));
         document.getElementById('status').innerText = 'Sistema pronto.';
     }
 
@@ -187,13 +180,13 @@
         filtered.forEach(p => {
             const card = document.createElement('div');
             card.className = 'card';
-            const dist = p.dist < 9999 ? `<span class="dist-tag">📍 ${p.dist.toFixed(1)} km</span>` : '';
+            const dist = p.dist < 9999 ? `<span class="dist-tag">📍 ${p.dist.toFixed(1)} km de distância</span>` : '';
             card.innerHTML = `
                 ${dist}
                 <button class="btn-view-map" onclick="focusMap(${p.lat},${p.lng},'${p.nome}')">📍</button>
                 <h3>${p.nome}</h3>
                 <p>${p.endereco}</p>
-                <p><b>Programa:</b> ${p.programa}</p>
+                <span class="badge">${p.programa}</span>
                 <p class="hours">🕒 ${p.horario}</p>
             `;
             resultsDiv.appendChild(card);
@@ -209,7 +202,7 @@
     navigator.geolocation.getCurrentPosition(pos => { 
         userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude }; 
         render(); 
-    }, () => { document.getElementById('status').innerText += ' (GPS desativado)'; });
+    });
 
     initMap();
     loadData();
