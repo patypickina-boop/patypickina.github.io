@@ -6,66 +6,54 @@
     <title>Localizador Parceiros Sema MPDFT</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --primary: #004a8e; --bg: #ffffff; --text: #000000; --light-gray: #f8f9fa; --border: #e0e0e0; }
+        :root { --primary: #004a8e; --bg: #ffffff; --text: #000000; --border: #e0e0e0; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body, html { height: 100%; background: var(--bg); color: var(--text); overflow: hidden; }
 
-        /* Header Estilo Institucional */
         header { 
             background: #fff; padding: 10px 20px; display: flex; align-items: center; 
-            justify-content: space-between; border-bottom: 2px solid var(--border); z-index: 1000; height: 70px;
+            gap: 15px; border-bottom: 2px solid var(--border); z-index: 1000; height: 70px;
         }
-        .header-left { display: flex; align-items: center; gap: 15px; }
-        header img { height: 50px; width: auto; border-radius: 5px; }
+        header img { height: 50px; width: auto; }
         header h1 { font-size: 1.3rem; font-weight: 700; color: #000; }
 
         #main { display: flex; height: calc(100vh - 70px); }
-
-        /* Sidebar conforme a foto */
         #sidebar { 
             width: 400px; background: #fff; display: flex; flex-direction: column; 
             border-right: 1px solid var(--border); box-shadow: 2px 0 5px rgba(0,0,0,0.05); 
         }
         
-        .filters-container { padding: 20px; border-bottom: 1px solid var(--border); overflow-y: auto; max-height: 50%; }
-        .filters-container h2 { font-size: 1rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
-        
-        .search-box { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 10px; outline: none; }
+        .filters-container { padding: 20px; border-bottom: 1px solid var(--border); overflow-y: auto; }
+        .filters-container h2 { font-size: 1rem; margin-bottom: 15px; text-transform: uppercase; }
+        .search-box { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 10px; outline: none; }
         
         .loc-row { display: flex; gap: 5px; margin-bottom: 10px; }
-        .loc-row input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem; }
+        .loc-row input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .btn-small { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
         .btn-blue { background: var(--primary); color: #fff; }
-        .btn-gray { background: #6c757d; color: #fff; }
 
         .radius-box { margin: 15px 0; }
-        .radius-box label { font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 5px; }
         .radius-box input { width: 100%; }
 
         .categories { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-        .cat-pill { padding: 5px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; cursor: pointer; border: none; color: #fff; }
+        .cat-pill { padding: 6px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; cursor: pointer; border: none; color: #fff; }
         .cat-all { background: #007bff; }
         .cat-serv { background: #28a745; }
         .cat-pecu { background: #dc3545; }
         .cat-saud { background: #ffc107; color: #000; }
-        .cat-pale { background: #6f42c1; }
 
-        /* Lista de Resultados */
-        #results { flex: 1; overflow-y: auto; padding: 15px; background: var(--light-gray); }
+        #results { flex: 1; overflow-y: auto; padding: 15px; background: #f8f9fa; }
         .card { 
             background: #fff; border: 1px solid var(--border); border-radius: 10px; 
             padding: 15px; margin-bottom: 12px; transition: 0.2s; position: relative;
         }
         .card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .card h3 { font-size: 1rem; margin-bottom: 5px; font-weight: 700; color: #000; padding-right: 30px; }
-        .card p { font-size: 0.8rem; color: #555; margin-bottom: 5px; line-height: 1.3; }
-        .card .hours { font-weight: 700; color: #000; margin-top: 5px; font-size: 0.8rem; }
+        .card h3 { font-size: 1rem; margin-bottom: 5px; font-weight: 700; color: #000; }
+        .card p { font-size: 0.8rem; color: #555; margin-bottom: 5px; }
+        .card .hours { font-weight: 700; color: #000; margin-top: 5px; font-size: 0.8rem; border-top: 1px solid #eee; padding-top: 5px; }
         .dist-tag { color: var(--primary); font-weight: 700; font-size: 0.8rem; display: block; margin-bottom: 8px; }
         
-        .btn-view { 
-            position: absolute; top: 15px; right: 15px; background: none; border: none; 
-            color: var(--primary); cursor: pointer; font-size: 1.1rem;
-        }
+        .btn-view { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--primary); cursor: pointer; font-size: 1.1rem; }
 
         #map { flex: 1; height: 100%; background: #eee; }
         .status-bar { padding: 5px 20px; font-size: 0.7rem; color: #888; background: #fff; border-bottom: 1px solid var(--border); }
@@ -81,7 +69,7 @@
 
 <header>
     <div class="header-left">
-        <img src="https://generated-images.adapta-one.s3.sa-east-1.amazonaws.com/patypickina%40gmail.com/019c71f1-bb9c-73cf-a990-1d5afcfa5668/2026-07-05T23-08-40-716Z_Original_user_intent_A_professional_and_minimalis.png" alt="Logo Sema">
+        <img src="logo.png" alt="Logo Sema">
         <h1>Localizador Parceiros Sema MPDFT</h1>
     </div>
 </header>
@@ -93,27 +81,23 @@
         <aside id="sidebar">
             <div class="filters-container">
                 <h2>Filtros</h2>
-                <input type="text" id="searchInput" class="search-box" placeholder="Buscar por nome, programa, cidade...">
-                
+                <input type="text" id="searchInput" class="search-box" placeholder="Busque por qualquer palavra...">
                 <div class="loc-row">
                     <input type="text" id="locInput" placeholder="CEP ou Endereço">
                     <button class="btn-small btn-blue" onclick="searchLocation()">Buscar</button>
-                    <button class="btn-small btn-gray" onclick="useGps()">GPS</button>
+                    <button class="btn-small" style="background:#6c757d; color:white;" onclick="useGps()">GPS</button>
                 </div>
-
                 <div class="radius-box">
-                    <label>Raio: <span id="radVal">10</span> km</label>
+                    <label style="font-size:0.8rem; font-weight:600;">Raio: <span id="radVal">10</span> km</label>
                     <input type="range" id="radSlider" min="1" max="100" value="10" oninput="updateRadius(this.value)">
                 </div>
-
                 <div class="categories">
                     <button class="cat-pill cat-all" onclick="filterCat('Todos')">Todos</button>
                     <button class="cat-pill cat-serv" onclick="filterCat('Serviços')">Serviços</button>
                     <button class="cat-pill cat-pecu" onclick="filterCat('Pecuniária')">Pecuniária</button>
                     <button class="cat-pill cat-saud" onclick="filterCat('Saúde')">Saúde</button>
-                    <button class="cat-pill cat-pale" onclick="filterCat('Palestras')">Palestras</button>
                 </div>
-                <button class="btn-clear" style="background:none; border:none; color:blue; cursor:pointer; font-size:0.7rem; text-decoration:underline;" onclick="clearAll()">Limpar Filtros</button>
+                <button style="background:none; border:none; color:blue; cursor:pointer; font-size:0.7rem; text-decoration:underline; margin-top:10px;" onclick="clearAll()">Limpar Filtros</button>
             </div>
             <div id="results"></div>
         </aside>
@@ -152,17 +136,16 @@
                 programa: r.c[4]?.v || '',
                 lat: null, lng: null, dist: 9999
             })).filter(p => p.nome !== 'Sem Nome');
-
             document.getElementById('status').innerText = `${partners.length} instituições carregadas.`;
-            render(); // Mostra a lista imediatamente
-            geocodeAll(); // Geocodifica em segundo plano
+            render();
+            geocodeAll();
         } catch (e) {
-            document.getElementById('status').innerHTML = '<b style="color:red">Erro ao carregar. Verifique se a planilha está "Publicada na Web".</b>';
+            document.getElementById('status').innerHTML = '<b style="color:red">Erro ao carregar. Verifique a publicação da planilha.</b>';
         }
     }
 
     async function geocodeAll() {
-        const cache = JSON.parse(localStorage.getItem('sema_cache_v9') || '{}');
+        const cache = JSON.parse(localStorage.getItem('sema_cache_v10') || '{}');
         for (let p of partners) {
             const key = p.endereco.toLowerCase().trim();
             if (cache[key]) { p.lat = cache[key].lat; p.lng = cache[key].lng; }
@@ -173,8 +156,8 @@
                     if (data[0]) {
                         p.lat = parseFloat(data[0].lat); p.lng = parseFloat(data[0].lon);
                         cache[key] = { lat: p.lat, lng: p.lng };
-                        localStorage.setItem('sema_cache_v9', JSON.stringify(cache));
-                        render(); // Atualiza o mapa conforme encontra coordenadas
+                        localStorage.setItem('sema_cache_v10', JSON.stringify(cache));
+                        render();
                     }
                 } catch (e) {}
                 await new Promise(r => setTimeout(r, 1200));
@@ -212,14 +195,7 @@
             const card = document.createElement('div');
             card.className = 'card';
             const dist = p.dist < 9999 ? `<span class="dist-tag">📍 ${p.dist.toFixed(1)} km</span>` : '';
-            card.innerHTML = `
-                ${dist}
-                <button class="btn-view" onclick="focusMap(${p.lat},${p.lng},'${p.nome}')">📍</button>
-                <h3>${p.nome}</h3>
-                <p>${p.endereco}</p>
-                <p><b>Programa:</b> ${p.programa}</p>
-                <p class="hours">🕒 ${p.horario}</p>
-            `;
+            card.innerHTML = `${dist}<button class="btn-view" onclick="focusMap(${p.lat},${p.lng},'${p.nome}')">📍</button><h3>${p.nome}</h3><p>${p.endereco}</p><p><b>Programa:</b> ${p.programa}</p><p class="hours">🕒 ${p.horario}</p>`;
             container.appendChild(card);
             if (p.lat) L.marker([p.lat, p.lng]).addTo(markers).bindPopup(`<b>${p.nome}</b><br>🕒 ${p.horario}`);
         });
@@ -229,17 +205,13 @@
     function updateRadius(v) { radius = v; document.getElementById('radVal').innerText = v; render(); }
     function filterCat(c) { currentCat = c; render(); }
     function clearAll() { document.getElementById('searchInput').value = ''; currentCat = 'Todos'; render(); }
-
     async function searchLocation() {
         const q = document.getElementById('locInput').value;
         const res = await fetch(`${NOMINATIM}?q=${encodeURIComponent(q + ', DF, Brasil')}&format=json&limit=1`);
         const data = await res.json();
         if (data[0]) { userLoc = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }; render(); }
     }
-
-    function useGps() {
-        navigator.geolocation.getCurrentPosition(pos => { userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude }; render(); });
-    }
+    function useGps() { navigator.geolocation.getCurrentPosition(pos => { userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude }; render(); }); }
 
     document.getElementById('searchInput').addEventListener('input', render);
     initMap();
