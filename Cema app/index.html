@@ -1,808 +1,203 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Localizador de Parceiros Sema MPDFT</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
-  <style>
-    :root {
-      --mpdft-blue: #0b3d91;
-      --mpdft-blue-dark: #082c69;
-      --mpdft-blue-light: #1e5bbf;
-      --sema-green: #2e7d32;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
-      background: #f4f6f9;
-      color: #222;
-    }
-    .app-layout {
-      display: flex;
-      min-height: 100vh;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Localizador Parceiros Sema MPDFT</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root { --bg: #ffffff; --text: #000000; --border: #eeeeee; --accent: #004a8e; }
+        body.high-contrast { --bg: #ffffff; --text: #000000; --border: #000000; --accent: #000000; }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body, html { height: 100%; background: var(--bg); color: var(--text); overflow: hidden; }
+        
+        header { 
+            background: #fff; padding: 10px 20px; display: flex; align-items: center; 
+            justify-content: space-between; border-bottom: 2px solid var(--border); z-index: 1000;
+        }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        header img { height: 50px; }
+        header h1 { font-size: 1.3rem; font-weight: 700; color: #000; }
+        
+        .btn-contrast { 
+            background: #000; color: #fff; border: none; padding: 8px 15px; 
+            border-radius: 5px; cursor: pointer; font-size: 0.8rem; font-weight: 700;
+        }
 
-    /* Sidebar */
-    .sidebar {
-      width: 360px;
-      min-width: 360px;
-      background: #ffffff;
-      border-right: 1px solid #e3e8ef;
-      display: flex;
-      flex-direction: column;
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      overflow-y: auto;
-    }
-    .sidebar-header {
-      background: var(--mpdft-blue);
-      color: #fff;
-      padding: 18px 20px;
-    }
-    .sidebar-header h1 {
-      font-size: 1.15rem;
-      margin: 0;
-      font-weight: 700;
-      line-height: 1.2;
-    }
-    .sidebar-header p {
-      margin: 4px 0 0;
-      font-size: 0.8rem;
-      opacity: 0.85;
-    }
-    .sidebar-body {
-      padding: 18px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
+        #main { display: flex; height: calc(100vh - 72px); }
+        #sidebar { 
+            width: 380px; background: var(--bg); display: flex; flex-direction: column; 
+            border-right: 1px solid var(--border); box-shadow: 2px 0 5px rgba(0,0,0,0.05); 
+        }
+        
+        .search-box { padding: 20px; border-bottom: 1px solid var(--border); }
+        .search-box input { 
+            width: 100%; padding: 12px; border: 2px solid var(--border); 
+            border-radius: 8px; font-size: 1rem; outline: none; color: #000; background: #fff;
+        }
 
-    /* Filtros rápidos */
-    .quick-filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .quick-filters .btn {
-      border-radius: 999px;
-      font-size: 0.78rem;
-      padding: 6px 14px;
-      border: 1px solid #d6dee8;
-      background: #fff;
-      color: #334155;
-      font-weight: 600;
-    }
-    .quick-filters .btn.active {
-      background: var(--mpdft-blue);
-      color: #fff;
-      border-color: var(--mpdft-blue);
-    }
+        #results { flex: 1; overflow-y: auto; padding: 15px; }
+        .card { 
+            background: #fff; border: 1px solid var(--border); border-radius: 10px; 
+            padding: 15px; margin-bottom: 12px; transition: 0.2s; 
+        }
+        .card h3 { font-size: 1rem; margin-bottom: 5px; font-weight: 700; color: #000; }
+        .card p { font-size: 0.85rem; margin-bottom: 8px; color: #333; }
+        .dist-tag { color: var(--accent); font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 10px; }
+        .btn-map { 
+            background: var(--accent); color: #fff; border: none; padding: 8px; 
+            border-radius: 5px; cursor: pointer; width: 100%; font-weight: 600;
+        }
 
-    /* Input group busca */
-    .search-group {
-      display: flex;
-      align-items: stretch;
-      border: 1px solid #cdd6e2;
-      border-radius: 10px;
-      overflow: hidden;
-      background: #fff;
-    }
-    .search-group .search-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 12px;
-      color: #6b7785;
-      background: #f7f9fc;
-      border-right: 1px solid #e3e8ef;
-    }
-    .search-group input {
-      flex: 1;
-      border: none;
-      padding: 10px 12px;
-      font-size: 0.9rem;
-      outline: none;
-    }
-    .search-group .gps-btn {
-      border: none;
-      background: #f7f9fc;
-      border-left: 1px solid #e3e8ef;
-      padding: 0 14px;
-      color: var(--mpdft-blue);
-      cursor: pointer;
-      font-size: 1.1rem;
-      transition: background 0.15s;
-    }
-    .search-group .gps-btn:hover { background: #eaf1fb; }
+        #map { flex: 1; height: 100%; background: #f0f0f0; }
+        .status-msg { padding: 10px 20px; font-size: 0.8rem; color: #888; background: #f9f9f9; border-bottom: 1px solid var(--border); }
 
-    .btn-primary-mpdft {
-      background: var(--mpdft-blue-dark);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      padding: 12px;
-      font-weight: 700;
-      width: 100%;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .btn-primary-mpdft:hover { background: #061f4d; }
-
-    .form-check-weekend {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #f7f9fc;
-      border: 1px solid #e3e8ef;
-      border-radius: 10px;
-      padding: 10px 12px;
-      cursor: pointer;
-    }
-    .form-check-weekend input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--mpdft-blue); }
-    .form-check-weekend label { margin: 0; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: #334155; }
-
-    .sidebar-footer {
-      margin-top: auto;
-      padding: 14px 20px;
-      font-size: 0.72rem;
-      color: #8a94a3;
-      border-top: 1px solid #eef2f7;
-    }
-
-    /* Conteúdo */
-    .content {
-      flex: 1;
-      padding: 24px 28px;
-      overflow-y: auto;
-    }
-    .content-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .content-header h2 {
-      font-size: 1.3rem;
-      margin: 0;
-      font-weight: 700;
-      color: #1f2937;
-    }
-    .result-count {
-      font-size: 0.85rem;
-      color: #6b7785;
-    }
-
-    /* Cards */
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 16px;
-    }
-    .card-item {
-      background: #fff;
-      border: 1px solid #e3e8ef;
-      border-radius: 14px;
-      padding: 16px;
-      box-shadow: 0 1px 2px rgba(16,24,40,0.04);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .card-item h3 {
-      margin: 0;
-      font-size: 1rem;
-      font-weight: 700;
-      color: #111827;
-    }
-    .card-item .address {
-      font-size: 0.85rem;
-      color: #6b7785;
-      line-height: 1.35;
-    }
-    .card-item .distance {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: var(--mpdft-blue);
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .card-item .schedule {
-      font-size: 0.8rem;
-      color: #475569;
-    }
-    .badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 4px;
-    }
-    .badge-prog {
-      font-size: 0.7rem;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-weight: 600;
-      background: #eef2f7;
-      color: #334155;
-    }
-    .badge-prog.prestacao-servicos { background: #e3f2fd; color: #0b3d91; }
-    .badge-prog.prestacao-pecuniaria { background: #fdecea; color: #b71c1c; }
-    .badge-prog.programa-saude { background: #e8f5e9; color: #2e7d32; }
-    .badge-prog.palestras { background: #fff4e5; color: #b25e00; }
-    .badge-prog.fim-semana { background: #f3e8ff; color: #6b21a8; }
-
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #8a94a3;
-    }
-    .empty-state i { font-size: 2.5rem; margin-bottom: 10px; display: block; }
-
-    .loading-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(255,255,255,0.7);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .loading-overlay.show { display: flex; }
-    .spinner-border { color: var(--mpdft-blue); }
-
-    @media (max-width: 900px) {
-      .app-layout { flex-direction: column; }
-      .sidebar { width: 100%; min-width: 100%; height: auto; position: relative; }
-      .content { padding: 18px; }
-    }
-  </style>
+        @media (max-width: 768px) {
+            #main { flex-direction: column; }
+            #sidebar { width: 100%; height: 45%; }
+            #map { height: 55%; }
+        }
+    </style>
 </head>
 <body>
-  <div class="app-layout">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <h1>Localizador de Parceiros</h1>
-        <p>SEMA · Ministério Público do Distrito Federal e Territórios</p>
-      </div>
 
-      <div class="sidebar-body">
-        <!-- Filtros rápidos -->
-        <div>
-          <small class="text-muted d-block mb-2 fw-semibold">Filtros rápidos</small>
-          <div class="quick-filters" id="quickFilters">
-            <button type="button" class="btn active" data-category="Todos">Todos</button>
-            <button type="button" class="btn" data-category="Prestação de Serviços">Prestação de Serviços</button>
-            <button type="button" class="btn" data-category="Prestação Pecuniária">Prestação Pecuniária</button>
-            <button type="button" class="btn" data-category="Programa de Saúde">Programa de Saúde</button>
-            <button type="button" class="btn" data-category="Palestras">Palestras</button>
-          </div>
-        </div>
+<header>
+    <div class="header-left">
+        <img src="https://adapta-one-prod.s3.sa-east-1.amazonaws.com/patypickina%40gmail.com/png/image-019f341b-1f13-710f-b3d7-0590792847b0.png" alt="Logo Sema">
+        <h1>Localizador Parceiros Sema MPDFT</h1>
+    </div>
+    <button class="btn-contrast" onclick="toggleContrast()">ALTO CONTRASTE</button>
+</header>
 
-        <!-- Campo de busca -->
-        <div>
-          <small class="text-muted d-block mb-2 fw-semibold">Buscar localização</small>
-          <div class="search-group">
-            <span class="search-icon"><i class="bi bi-search"></i></span>
-            <input type="text" id="searchInput" placeholder="Digite o CEP ou endereço..." />
-            <button type="button" class="gps-btn" id="gpsBtn" title="Usar minha localização (GPS)">
-              <i class="bi bi-geo-alt"></i>
-            </button>
-          </div>
-        </div>
+<div id="app">
+    <div id="main">
+        <aside id="sidebar">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Busque por cidade, programa, CEP ou nome...">
+            </div>
+            <div id="status" class="status-msg">Carregando dados da planilha...</div>
+            <div id="results"></div>
+        </aside>
+        <div id="map"></div>
+    </div>
+</div>
 
-        <!-- Botão principal -->
-        <button type="button" class="btn-primary-mpdft" id="searchBtn">
-          Buscar por CEP/Endereço
-        </button>
-
-        <!-- Filtro final de semana -->
-        <div class="form-check-weekend">
-          <input type="checkbox" id="weekendFilter" />
-          <label for="weekendFilter">Final de Semana</label>
-        </div>
-
-        <!-- Busca por texto livre (nome/endereço) -->
-        <div>
-          <small class="text-muted d-block mb-2 fw-semibold">Filtrar por texto</small>
-          <input type="text" class="form-control form-control-sm" id="textFilter" placeholder="Nome, bairro ou palavra-chave..." />
-        </div>
-      </div>
-
-      <div class="sidebar-footer">
-        © MPDFT · SEMA — Os dados são fornecidos pela planilha oficial de parceiros.
-      </div>
-    </aside>
-
-    <!-- Conteúdo -->
-    <main class="content">
-      <div class="content-header">
-        <h2>Instituições Parceiras</h2>
-        <span class="result-count" id="resultCount">Carregando...</span>
-      </div>
-
-      <div id="cardsContainer" class="cards-grid">
-        <div class="empty-state">
-          <i class="bi bi-arrow-repeat"></i>
-          Carregando instituições...
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner-border" role="status"></div>
-    <div id="loadingText">Processando...</div>
-  </div>
-
-  <script>
-    // ===== Configurações =====
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
     const SHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
-    const SHEET_GID = '0';
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}`;
-    const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
-    const GEOCODE_CACHE_KEY = 'sema_mpdft_geocode_cache_v1';
-    const USER_LOCATION_KEY = 'sema_mpdft_user_location_v1';
+    const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+    const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 
-    // ===== Estado =====
-    let allInstitutions = [];
-    let currentCategory = 'Todos';
-    let userLocation = null; // { lat, lon, label }
+    let partners = [];
+    let map, markersLayer;
+    let userLoc = null;
 
-    // ===== DOM =====
-    const cardsContainer = document.getElementById('cardsContainer');
-    const resultCount = document.getElementById('resultCount');
-    const searchInput = document.getElementById('searchInput');
-    const textFilter = document.getElementById('textFilter');
-    const searchBtn = document.getElementById('searchBtn');
-    const gpsBtn = document.getElementById('gpsBtn');
-    const weekendFilter = document.getElementById('weekendFilter');
-    const quickFilters = document.getElementById('quickFilters');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    const loadingText = document.getElementById('loadingText');
+    function toggleContrast() { document.body.classList.toggle('high-contrast'); }
 
-    // ===== Utilidades =====
-    function showLoading(text = 'Processando...') {
-      loadingText.textContent = text;
-      loadingOverlay.classList.add('show');
-    }
-    function hideLoading() {
-      loadingOverlay.classList.remove('show');
+    function initMap() {
+        map = L.map('map').setView([-15.7942, -47.8822], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        markersLayer = L.layerGroup().addTo(map);
     }
 
-    function normalizeText(s) {
-      if (s === null || s === undefined) return '';
-      return String(s)
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .trim();
-    }
+    async function loadData() {
+        try {
+            const res = await fetch(GVIZ_URL);
+            const text = await res.text();
+            const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
+            const rows = json.table.rows;
+            
+            partners = rows.map((r, idx) => ({
+                id: idx,
+                nome: r.c[0]?.v || 'Sem Nome',
+                endereco: r.c[1]?.v || '',
+                cidade: r.c[2]?.v || '',
+                programa: r.c[4]?.v || '',
+                obs: r.c[8]?.v || '',
+                lat: null, lng: null, dist: 9999
+            })).filter(p => p.nome !== 'Sem Nome');
 
-    function cleanCep(cep) {
-      return String(cep || '').replace(/\D/g, '');
-    }
-
-    function isCepQuery(text) {
-      const digits = cleanCep(text);
-      return digits.length === 8;
-    }
-
-    function formatDistance(km) {
-      if (km < 1) {
-        return (Math.round(km * 1000)) + ' m';
-      }
-      return km.toFixed(1).replace('.', ',') + ' km';
-    }
-
-    // ===== Haversine =====
-    function haversineKm(lat1, lon1, lat2, lon2) {
-      const R = 6371; // km
-      const toRad = (deg) => (deg * Math.PI) / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    }
-
-    // ===== Cache de geocodificação =====
-    function getGeocodeCache() {
-      try {
-        return JSON.parse(localStorage.getItem(GEOCODE_CACHE_KEY) || '{}');
-      } catch (e) {
-        return {};
-      }
-    }
-    function saveGeocodeCache(cache) {
-      localStorage.setItem(GEOCODE_CACHE_KEY, JSON.stringify(cache));
-    }
-    function getCachedCoord(key) {
-      const cache = getGeocodeCache();
-      return cache[key] || null;
-    }
-    function setCachedCoord(key, coord) {
-      const cache = getGeocodeCache();
-      cache[key] = coord;
-      saveGeocodeCache(cache);
-    }
-
-    // ===== Nominatim =====
-    async function nominatimSearch(query) {
-      const url = `${NOMINATIM_URL}?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`;
-      const resp = await fetch(url, {
-        headers: { 'Accept-Language': 'pt-BR' }
-      });
-      if (!resp.ok) throw new Error('Falha na consulta ao Nominatim');
-      const data = await resp.json();
-      if (!data || data.length === 0) return null;
-      return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), label: data[0].display_name };
-    }
-
-    async function locateByCepOrAddress(text) {
-      let query;
-      if (isCepQuery(text)) {
-        const cep = cleanCep(text);
-        // Formata como "CEP, Distrito Federal, Brasil"
-        query = `${cep}, Distrito Federal, Brasil`;
-      } else {
-        query = `${text}, Distrito Federal, Brasil`;
-      }
-      return await nominatimSearch(query);
-    }
-
-    async function locateByGps() {
-      return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-          reject(new Error('Geolocalização não suportada pelo navegador.'));
-          return;
+            document.getElementById('status').innerText = `${partners.length} instituições carregadas. Localizando no mapa...`;
+            await geocodeAll();
+            render();
+        } catch (e) {
+            document.getElementById('status').innerHTML = '<b style="color:red">Erro ao carregar. Verifique se a planilha está "Publicada na Web".</b>';
         }
-        navigator.geolocation.getCurrentPosition(
-          (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, label: 'Minha localização (GPS)' }),
-          (err) => reject(new Error('Não foi possível obter sua localização.')),
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-      });
     }
 
-    // ===== Geocodificar instituições (com cache) =====
-    async function geocodeInstitution(inst) {
-      const key = normalizeText(inst.endereco + ' ' + inst.nome + ' ' + (inst.bairro || ''));
-      const cached = getCachedCoord(key);
-      if (cached) return cached;
-
-      const query = `${inst.endereco}, ${inst.bairro || ''}, Distrito Federal, Brasil`;
-      try {
-        const coord = await nominatimSearch(query);
-        if (coord) {
-          setCachedCoord(key, coord);
-          return coord;
+    async function geocodeAll() {
+        const cache = JSON.parse(localStorage.getItem('sema_cache_v5') || '{}');
+        for (let p of partners) {
+            const key = p.endereco.toLowerCase().trim();
+            if (cache[key]) { p.lat = cache[key].lat; p.lng = cache[key].lng; }
+            else {
+                try {
+                    const res = await fetch(`${NOMINATIM}?q=${encodeURIComponent(p.endereco + ', DF, Brasil')}&format=json&limit=1`);
+                    const data = await res.json();
+                    if (data[0]) {
+                        p.lat = parseFloat(data[0].lat); p.lng = parseFloat(data[0].lon);
+                        cache[key] = { lat: p.lat, lng: p.lng };
+                    }
+                } catch (e) {}
+                await new Promise(r => setTimeout(r, 1000));
+            }
         }
-      } catch (e) {
-        // ignora erro individual
-      }
-      return null;
+        localStorage.setItem('sema_cache_v5', JSON.stringify(cache));
+        document.getElementById('status').innerText = 'Sistema pronto. Busque por qualquer termo.';
     }
 
-    // ===== Parse da planilha =====
-    function parseSheet(jsonText) {
-      // gviz retorna: /*O_o*/ google.visualization.Query.setResponse({...});
-      const start = jsonText.indexOf('{');
-      const end = jsonText.lastIndexOf('}');
-      const jsonString = jsonText.substring(start, end + 1);
-      const data = JSON.parse(jsonString);
-      const cols = data.table.cols.map((c) => (c.label ? c.label : c.id));
-      const rows = data.table.rows.map((r) => {
-        const obj = {};
-        r.c.forEach((cell, idx) => {
-          const colName = cols[idx] || `col_${idx}`;
-          obj[colName] = cell ? (cell.v !== null && cell.v !== undefined ? cell.v : (cell.f || '')) : '';
-        });
-        return obj;
-      });
-      return { cols, rows };
-    }
-
-    function findColumn(cols, candidates) {
-      const normCols = cols.map((c) => ({ raw: c, norm: normalizeText(c) }));
-      for (const cand of candidates) {
-        const found = normCols.find((c) => c.norm.includes(normalizeText(cand)));
-        if (found) return found.raw;
-      }
-      return null;
-    }
-
-    function mapInstitutions(cols, rows) {
-      const colNome = findColumn(cols, ['nome', 'instituicao', 'razao social', 'organizacao']);
-      const colEndereco = findColumn(cols, ['endereco', 'logradouro', 'rua', 'av']);
-      const colBairro = findColumn(cols, ['bairro', 'regiao', 'cidade']);
-      const colHorario = findColumn(cols, ['horario', 'funcionamento', 'hora', 'atendimento']);
-      const colFimSemana = findColumn(cols, ['fim de semana', 'final de semana', 'sabado', 'domingo', 'fds']);
-      const colPrestServ = findColumn(cols, ['prestacao de servicos', 'prestacao servicos', 'servicos']);
-      const colPrestPec = findColumn(cols, ['prestacao pecuniaria', 'pecuniaria']);
-      const colProgSaude = findColumn(cols, ['programa de saude', 'saude']);
-      const colPalestras = findColumn(cols, ['palestras', 'palestra']);
-
-      return rows.map((r, i) => {
-        const nome = colNome ? (r[colNome] || '') : '';
-        const endereco = colEndereco ? (r[colEndereco] || '') : '';
-        const bairro = colBairro ? (r[colBairro] || '') : '';
-        const horario = colHorario ? (r[colHorario] || '') : '';
-        const fimSemanaCol = colFimSemana ? (r[colFimSemana] || '') : '';
-
-        const programas = [];
-        const hasFlag = (val) => {
-          const n = normalizeText(val);
-          return n === 'sim' || n === 'x' || n === 'true' || n === '1' || n.includes('sim');
-        };
-
-        if (colPrestServ && hasFlag(r[colPrestServ])) programas.push('Prestação de Serviços');
-        if (colPrestPec && hasFlag(r[colPrestPec])) programas.push('Prestação Pecuniária');
-        if (colProgSaude && hasFlag(r[colProgSaude])) programas.push('Programa de Saúde');
-        if (colPalestras && hasFlag(r[colPalestras])) programas.push('Palestras');
-
-        // Se não houver colunas de programas, tenta detectar no texto
-        if (programas.length === 0) {
-          const allText = normalizeText(nome + ' ' + endereco + ' ' + horario);
-          if (allText.includes('prestacao de servicos')) programas.push('Prestação de Serviços');
-          if (allText.includes('prestacao pecuniaria')) programas.push('Prestação Pecuniária');
-          if (allText.includes('programa de saude') || allText.includes('saude')) programas.push('Programa de Saúde');
-          if (allText.includes('palestra')) programas.push('Palestras');
-        }
-
-        return {
-          id: i,
-          nome,
-          endereco,
-          bairro,
-          horario,
-          fimSemanaCol,
-          programas,
-          lat: null,
-          lon: null,
-          distance: null
-        };
-      }).filter((i) => i.nome || i.endereco);
-    }
-
-    // ===== Carregar dados =====
-    async function loadInstitutions() {
-      try {
-        showLoading('Carregando instituições...');
-        const resp = await fetch(SHEET_URL);
-        const text = await resp.text();
-        const { cols, rows } = parseSheet(text);
-        allInstitutions = mapInstitutions(cols, rows);
-        hideLoading();
-        render();
-      } catch (e) {
-        hideLoading();
-        cardsContainer.innerHTML = `
-          <div class="empty-state">
-            <i class="bi bi-exclamation-triangle"></i>
-            Erro ao carregar a planilha de parceiros.<br/>
-            <small>${e.message}</small>
-          </div>`;
-      }
-    }
-
-    // ===== Filtros =====
-    function isWeekendInstitution(inst) {
-      const horario = normalizeText(inst.horario);
-      const fdsCol = normalizeText(inst.fimSemanaCol);
-      const combined = horario + ' ' + fdsCol;
-      return combined.includes('sabado') ||
-             combined.includes('domingo') ||
-             combined.includes('fim de semana') ||
-             combined.includes('final de semana') ||
-             combined.includes('fds');
-    }
-
-    function applyFilters() {
-      const text = normalizeText(textFilter.value);
-      const weekendOnly = weekendFilter.checked;
-
-      let list = allInstitutions.filter((inst) => {
-        // Categoria
-        if (currentCategory !== 'Todos') {
-          if (!inst.programas.includes(currentCategory)) return false;
-        }
-        // Texto livre
-        if (text) {
-          const blob = normalizeText(inst.nome + ' ' + inst.endereco + ' ' + inst.bairro + ' ' + inst.horario + ' ' + inst.programas.join(' '));
-          if (!blob.includes(text)) return false;
-        }
-        // Final de semana
-        if (weekendOnly && !isWeekendInstitution(inst)) return false;
-        return true;
-      });
-
-      // Ordenação por distância (menor -> maior). Sem distância vai para o final.
-      list.sort((a, b) => {
-        if (a.distance == null && b.distance == null) return 0;
-        if (a.distance == null) return 1;
-        if (b.distance == null) return -1;
-        return a.distance - b.distance;
-      });
-
-      return list;
-    }
-
-    // ===== Render =====
-    function badgeClass(prog) {
-      const n = normalizeText(prog);
-      if (n.includes('prestacao de servicos')) return 'prestacao-servicos';
-      if (n.includes('prestacao pecuniaria')) return 'prestacao-pecuniaria';
-      if (n.includes('saude')) return 'programa-saude';
-      if (n.includes('palestra')) return 'palestras';
-      return '';
+    function haversine(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2-lat1)*Math.PI/180;
+        const dLon = (lon2-lon1)*Math.PI/180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+        return 2*R*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
     function render() {
-      const list = applyFilters();
-      resultCount.textContent = `${list.length} instituição(ões) encontrada(s)` +
-        (userLocation ? ` · ordenadas por distância a partir de "${userLocation.label || 'sua localização'}"` : '');
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '';
+        markersLayer.clearLayers();
 
-      if (list.length === 0) {
-        cardsContainer.innerHTML = `
-          <div class="empty-state">
-            <i class="bi bi-inbox"></i>
-            Nenhuma instituição encontrada com os filtros atuais.
-          </div>`;
-        return;
-      }
+        let filtered = partners.filter(p => 
+            (p.nome + p.endereco + p.cidade + p.programa + p.obs).toLowerCase().includes(query)
+        );
 
-      cardsContainer.innerHTML = list.map((inst) => {
-        const distanceHtml = inst.distance != null
-          ? `<div class="distance"><i class="bi bi-geo-alt-fill"></i> ${formatDistance(inst.distance)}</div>`
-          : '';
-        const scheduleHtml = inst.horario
-          ? `<div class="schedule"><i class="bi bi-clock"></i> ${inst.horario}</div>`
-          : '';
-        const badges = inst.programas.map((p) =>
-          `<span class="badge-prog ${badgeClass(p)}">${p}</span>`
-        ).join('');
-        const weekendBadge = isWeekendInstitution(inst)
-          ? `<span class="badge-prog fim-semana"><i class="bi bi-calendar-week"></i> Fim de Semana</span>`
-          : '';
-
-        return `
-          <div class="card-item">
-            <h3>${inst.nome || 'Sem nome'}</h3>
-            <div class="address">
-              <i class="bi bi-geo-alt"></i> ${[inst.endereco, inst.bairro].filter(Boolean).join(' - ') || 'Endereço não informado'}
-            </div>
-            ${distanceHtml}
-            ${scheduleHtml}
-            <div class="badges">${badges}${weekendBadge}</div>
-          </div>`;
-      }).join('');
-    }
-
-    // ===== Distâncias =====
-    function recalcDistances() {
-      if (!userLocation) {
-        allInstitutions.forEach((i) => { i.distance = null; });
-        return;
-      }
-      allInstitutions.forEach((i) => {
-        if (i.lat != null && i.lon != null) {
-          i.distance = haversineKm(userLocation.lat, userLocation.lon, i.lat, i.lon);
-        } else {
-          i.distance = null;
+        if (userLoc) {
+            filtered.forEach(p => { if(p.lat) p.dist = haversine(userLoc.lat, userLoc.lng, p.lat, p.lng); });
+            filtered.sort((a, b) => a.dist - b.dist);
         }
-      });
+
+        filtered.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            const dist = p.dist < 9999 ? `<span class="dist-tag">📍 ${p.dist.toFixed(1)} km de distância</span>` : '';
+            card.innerHTML = `
+                ${dist}
+                <h3>${p.nome}</h3>
+                <p>${p.endereco}</p>
+                <p><b>Programa:</b> ${p.programa}</p>
+                <button class="btn-map" onclick="focusMap(${p.lat},${p.lng},'${p.nome}')">Ver no Mapa</button>
+            `;
+            resultsDiv.appendChild(card);
+            if (p.lat) L.marker([p.lat, p.lng]).addTo(markersLayer).bindPopup(`<b>${p.nome}</b><br>${p.endereco}`);
+        });
     }
 
-    async function geocodeAllInstitutions() {
-      showLoading('Geocodificando instituições...');
-      // Respeita limite do Nominatim: 1 req/segundo
-      for (let i = 0; i < allInstitutions.length; i++) {
-        const inst = allInstitutions[i];
-        if (inst.lat != null && inst.lon != null) continue;
-        const coord = await geocodeInstitution(inst);
-        if (coord) {
-          inst.lat = coord.lat;
-          inst.lon = coord.lon;
-        }
-        if (i < allInstitutions.length - 1) {
-          await new Promise((r) => setTimeout(r, 1100));
-        }
-      }
-      hideLoading();
+    function focusMap(lat, lng, n) { 
+        if(lat) { map.setView([lat, lng], 16); L.popup().setLatLng([lat, lng]).setContent(`<b>${n}</b>`).openOn(map); } 
     }
 
-    // ===== Ações =====
-    async function handleSearch() {
-      const query = searchInput.value.trim();
-      if (!query) {
-        alert('Digite um CEP ou endereço para buscar.');
-        return;
-      }
-      try {
-        showLoading('Localizando endereço...');
-        const loc = await locateByCepOrAddress(query);
-        if (!loc) {
-          hideLoading();
-          alert('Endereço/CEP não encontrado. Tente novamente com outro termo.');
-          return;
-        }
-        userLocation = loc;
-        localStorage.setItem(USER_LOCATION_KEY, JSON.stringify(loc));
-        hideLoading();
-        await geocodeAllInstitutions();
-        recalcDistances();
-        render();
-      } catch (e) {
-        hideLoading();
-        alert('Erro ao buscar localização: ' + e.message);
-      }
-    }
-
-    async function handleGps() {
-      try {
-        showLoading('Obtendo sua localização...');
-        const loc = await locateByGps();
-        userLocation = loc;
-        localStorage.setItem(USER_LOCATION_KEY, JSON.stringify(loc));
-        hideLoading();
-        await geocodeAllInstitutions();
-        recalcDistances();
-        render();
-      } catch (e) {
-        hideLoading();
-        alert(e.message);
-      }
-    }
-
-    // ===== Eventos =====
-    searchBtn.addEventListener('click', handleSearch);
-    searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') handleSearch();
-    });
-    gpsBtn.addEventListener('click', handleGps);
-    textFilter.addEventListener('input', render);
-    weekendFilter.addEventListener('change', render);
-
-    quickFilters.addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-category]');
-      if (!btn) return;
-      quickFilters.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentCategory = btn.dataset.category;
-      render();
+    document.getElementById('searchInput').addEventListener('input', render);
+    navigator.geolocation.getCurrentPosition(pos => { 
+        userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude }; 
+        render(); 
     });
 
-    // ===== Init =====
-    (async function init() {
-      // Restaura localização do usuário se existir
-      try {
-        const saved = JSON.parse(localStorage.getItem(USER_LOCATION_KEY) || 'null');
-        if (saved && saved.lat != null && saved.lon != null) {
-          userLocation = saved;
-        }
-      } catch (e) {}
-
-      await loadInstitutions();
-
-      // Se já havia localização, recalcula distâncias e geocodifica se necessário
-      if (userLocation) {
-        await geocodeAllInstitutions();
-        recalcDistances();
-        render();
-      }
-    })();
-  </script>
+    initMap();
+    loadData();
+</script>
 </body>
 </html>
