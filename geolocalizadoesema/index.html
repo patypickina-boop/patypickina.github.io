@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Localizador Parceiros Sema MPDFT</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root { --primary: #004a8e; --bg: #ffffff; --text: #1a1a1a; --border: #e0e0e0; --card-bg: #ffffff; }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body, html { height: 100%; background: var(--bg); color: var(--text); overflow: hidden; }
+        
+        header { 
+            background: #fff; padding: 10px 25px; display: flex; align-items: center; 
+            gap: 20px; border-bottom: 2px solid var(--border); z-index: 1000; height: 75px;
+        }
+        header img { height: 55px; width: auto; }
+        header h1 { font-size: 1.4rem; font-weight: 700; color: #000; }
+
+        #main { display: flex; height: calc(100vh - 75px); }
+        #sidebar { 
+            width: 420px; background: #fff; display: flex; flex-direction: column; 
+            border-right: 1px solid var(--border); box-shadow: 2px 0 10px rgba(0,0,0,0.05); 
+        }
+        
+        .search-area { padding: 20px; border-bottom: 1px solid var(--border); background: #fcfcfc; }
+        .search-area input { 
+            width: 100%; padding: 14px 18px; border: 1px solid #ccc; 
+            border-radius: 10px; font-size: 1rem; outline: none; color: #000; background: #fff;
+        }
+        .search-area input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,74,142,0.1); }
+        
+        .btn-clear { 
+            background: none; border: none; color: #666; font-size: 0.8rem; 
+            margin-top: 10px; cursor: pointer; text-decoration: underline; font-weight: 600;
+        }
+
+        #results { flex: 1; overflow-y: auto; padding: 15px; background: #f8f9fa; }
+        .card { 
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; 
+            padding: 20px; margin-bottom: 15px; transition: 0.2s; position: relative;
+        }
+        .card:hover { border-color: var(--primary); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+        .card h3 { font-size: 1.1rem; margin-bottom: 8px; font-weight: 700; color: #000; padding-right: 35px; }
+        .card p { font-size: 0.85rem; margin-bottom: 6px; color: #444; line-height: 1.5; }
+        .card .hours { font-weight: 700; color: #000; margin-top: 10px; display: flex; align-items: center; gap: 6px; font-size: 0.85rem; }
+        .dist-tag { color: var(--primary); font-weight: 800; font-size: 0.85rem; display: block; margin-bottom: 10px; }
+        
+        .badge { 
+            display: inline-block; padding: 4px 12px; border-radius: 20px; 
+            font-size: 0.75rem; font-weight: 700; margin-right: 6px; margin-top: 6px;
+            background: #eef2fb; color: var(--primary); border: 1px solid #d0dcf5;
+        }
+
+        .btn-view-map { 
+            position: absolute; top: 20px; right: 20px; background: #f0f4f8; border: none; 
+            color: var(--primary); cursor: pointer; width: 35px; height: 35px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+            transition: 0.2s;
+        }
+        .btn-view-map:hover { background: var(--primary); color: #fff; transform: scale(1.1); }
+
+        #map { flex: 1; height: 100%; background: #f0f0f0; }
+        .status-bar { padding: 8px 25px; font-size: 0.75rem; color: #666; background: #fff; border-bottom: 1px solid var(--border); font-weight: 600; }
+
+        @media (max-width: 768px) {
+            #main { flex-direction: column; }
+            #sidebar { width: 100%; height: 45%; }
+            #map { height: 55%; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <img src="logo.png" alt="Logo Sema" onerror="this.style.display='none'">
+        <h1>Localizador Parceiros Sema MPDFT</h1>
+    </div>
+</header>
+
+<div class="status-bar" id="status">Conectando à base de dados...</div>
+
+<div id="app">
+    <div id="main">
+        <aside id="sidebar">
+            <div class="search-area">
+                <input type="text" id="searchInput" placeholder="Busque por cidade, programa, CEP, nome ou qualquer palavra...">
+                <button class="btn-clear" onclick="clearFilters()">Limpar busca</button>
+            </div>
+            <div id="results"></div>
+        </aside>
+        <div id="map"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const SHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
+    const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+    const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
+
+    let partners = [];
+    let map, markersLayer;
+    let userLoc = null;
+
+    function clearFilters() { document.getElementById('searchInput').value = ''; render(); }
+
+    function initMap() {
+        map = L.map('map').setView([-15.7942, -47.8822], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+        markersLayer = L.layerGroup().addTo(map);
+    }
+
+    async function loadData() {
+        try {
+            const res = await fetch(GVIZ_URL);
+            const text = await res.text();
+            const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
+            const rows = json.table.rows;
+            
+            partners = rows.map((r, idx) => ({
+                id: idx,
+                nome: r.c[0]?.v || 'Sem Nome',
+                endereco: r.c[1]?.v || '',
+                cidade: r.c[2]?.v || '',
+                horario: r.c[3]?.v || 'Horário não informado',
+                programa: r.c[4]?.v || '',
+                obs: r.c[8]?.v || '',
+                lat: null, lng: null, dist: 99999
+            })).filter(p => p.nome !== 'Sem Nome');
+
+            document.getElementById('status').innerText = `${partners.length} instituições encontradas.`;
+            render();
+            geocodeAll();
+        } catch (e) {
+            document.getElementById('status').innerHTML = '<b style="color:red">Erro ao carregar. Verifique se a planilha está "Publicada na Web".</b>';
+        }
+    }
+
+    async function geocodeAll() {
+        const cache = JSON.parse(localStorage.getItem('sema_cache_v11') || '{}');
+        for (let p of partners) {
+            const key = p.endereco.toLowerCase().trim();
+            if (cache[key]) { 
+                p.lat = cache[key].lat; p.lng = cache[key].lng; 
+            } else {
+                try {
+                    const res = await fetch(`${NOMINATIM}?q=${encodeURIComponent(p.endereco + ', DF, Brasil')}&format=json&limit=1`);
+                    const data = await res.json();
+                    if (data[0]) {
+                        p.lat = parseFloat(data[0].lat); p.lng = parseFloat(data[0].lon);
+                        cache[key] = { lat: p.lat, lng: p.lng };
+                        localStorage.setItem('sema_cache_v11', JSON.stringify(cache));
+                        render();
+                    }
+                } catch (e) {}
+                await new Promise(r => setTimeout(r, 1200));
+            }
+        }
+    }
+
+    function haversine(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2-lat1)*Math.PI/180;
+        const dLon = (lon2-lon1)*Math.PI/180;
+        const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+        return 2*R*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function render() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '';
+        markersLayer.clearLayers();
+
+        let filtered = partners.filter(p => 
+            (p.nome + p.endereco + p.cidade + p.programa + p.obs + p.horario).toLowerCase().includes(query)
+        );
+
+        if (userLoc) {
+            filtered.forEach(p => { if(p.lat) p.dist = haversine(userLoc.lat, userLoc.lng, p.lat, p.lng); });
+            filtered.sort((a, b) => a.dist - b.dist);
+        }
+
+        filtered.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            const dist = (p.dist &lt; 99999 && userLoc) ? `<span class="dist-tag">📍 ${p.dist.toFixed(1)} km de distância</span>` : '';
+            card.innerHTML = `
+                ${dist}
+                <button class="btn-view-map" onclick="focusMap(${p.lat},${p.lng},'${p.nome}')">📍</button>
+                <h3>${p.nome}</h3>
+                <p><b>Endereço:</b> ${p.endereco}</p>
+                <span class="badge">${p.programa}</span>
+                <p class="hours">🕒 ${p.horario}</p>
+            `;
+            resultsDiv.appendChild(card);
+            if (p.lat) L.marker([p.lat, p.lng]).addTo(markersLayer).bindPopup(`<b>${p.nome}</b><br>${p.endereco}<br>🕒 ${p.horario}`);
+        });
+    }
+
+    function focusMap(lat, lng, n) { 
+        if(lat) { 
+            map.setView([lat, lng], 16); 
+            L.popup().setLatLng([lat, lng]).setContent(`<b>${n}</b>`).openOn(map); 
+        } else {
+            alert("Localização ainda sendo processada para esta instituição.");
+        }
+    }
+
+    document.getElementById('searchInput').addEventListener('input', render);
+    
+    // Tentar obter localização do usuário para ordenar por distância
+    navigator.geolocation.getCurrentPosition(pos => { 
+        userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude }; 
+        render(); 
+    }, () => { 
+        document.getElementById('status').innerText += ' (GPS não autorizado - use a busca para filtrar)'; 
+    });
+
+    initMap();
+    loadData();
+</script>
+</body>
+</html>
