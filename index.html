@@ -187,14 +187,14 @@
 
         if (userLoc) {
             filtered.forEach(p => { if(p.lat) p.dist = haversine(userLoc.lat, userLoc.lng, p.lat, p.lng); });
-            filtered = filtered.filter(p => p.dist <= radius);
+            filtered = filtered.filter(p => p.dist &lt;= radius);
             filtered.sort((a, b) => a.dist - b.dist);
         }
 
         filtered.forEach(p => {
             const card = document.createElement('div');
             card.className = 'card';
-            const dist = p.dist < 9999 ? `<span class="dist-tag">📍 ${p.dist.toFixed(1)} km</span>` : '';
+            const dist = p.dist &lt; 9999 ? `<span class="dist-tag">📍 ${p.dist.toFixed(1)} km</span>` : '';
             card.innerHTML = `${dist}<button class="btn-view" onclick="focusMap(${p.lat},${p.lng},'${p.nome}')">📍</button><h3>${p.nome}</h3><p>${p.endereco}</p><p><b>Programa:</b> ${p.programa}</p><p class="hours">🕒 ${p.horario}</p>`;
             container.appendChild(card);
             if (p.lat) L.marker([p.lat, p.lng]).addTo(markers).bindPopup(`<b>${p.nome}</b><br>🕒 ${p.horario}`);
