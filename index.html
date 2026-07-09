@@ -4,468 +4,212 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Localizador Parceiros Sema MPDFT</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: #f5f7fa; color: #1f2937; }
+  html, body { height: 100%; font-family: 'Inter', system-ui, sans-serif; background: #f5f7fa; color: #1f2937; }
 
   header {
-    background: #ffffff;
-    color: #000000;
-    padding: 14px 22px;
-    border-bottom: 1px solid #e5e7eb;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    position: sticky; top: 0; z-index: 1000;
+    background: #ffffff; color: #000000; padding: 14px 22px;
+    border-bottom: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; gap: 15px;
   }
-  header h1 {
-    font-size: 20px; font-weight: 700; color: #000000; letter-spacing: -0.2px;
-  }
+  header img { height: 45px; width: auto; }
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.2px; }
 
-  .app {
-    display: flex; height: calc(100vh - 56px);
-  }
+  .app { display: flex; height: calc(100vh - 75px); }
 
   .sidebar {
-    width: 420px; min-width: 360px; max-width: 480px;
-    background: #ffffff; border-right: 1px solid #e5e7eb;
+    width: 420px; min-width: 360px; background: #ffffff; border-right: 1px solid #e5e7eb;
     display: flex; flex-direction: column; overflow: hidden;
   }
 
-  .search-box { padding: 14px 16px; border-bottom: 1px solid #eef0f3; background: #fafbfc; }
+  .search-box { padding: 16px; border-bottom: 1px solid #eef0f3; background: #fafbfc; }
+  .search-box h2 { font-size: 14px; text-transform: uppercase; color: #6b7280; margin-bottom: 12px; letter-spacing: 0.5px; }
   .search-box input {
-    width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #d1d5db;
-    border-radius: 8px; outline: none; transition: border-color .15s, box-shadow .15s;
+    width: 100%; padding: 12px; font-size: 14px; border: 1px solid #d1d5db;
+    border-radius: 8px; outline: none; margin-bottom: 10px;
   }
-  .search-box input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
-  .search-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .search-box input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  
+  .btn-row { display: flex; gap: 8px; }
   .btn {
-    font-size: 13px; padding: 7px 12px; border-radius: 7px; border: 1px solid #d1d5db;
-    background: #fff; color: #374151; cursor: pointer; transition: all .15s; font-family: inherit;
+    flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db;
+    background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s;
   }
-  .btn:hover { background: #f3f4f6; }
   .btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
   .btn-primary:hover { background: #1d4ed8; }
-  .btn-ghost { background: transparent; border-color: transparent; color: #6b7280; }
-  .btn-ghost:hover { background: #f3f4f6; color: #374151; }
 
-  .status { font-size: 12px; color: #6b7280; margin-top: 8px; }
-
-  .results { flex: 1; overflow-y: auto; padding: 12px; }
+  .results { flex: 1; overflow-y: auto; padding: 12px; background: #f9fafb; }
   .card {
-    background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
-    padding: 14px; margin-bottom: 10px; transition: box-shadow .15s, transform .15s;
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 16px; margin-bottom: 12px; transition: 0.2s; position: relative;
   }
-  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); transform: translateY(-1px); }
-  .card-name { font-weight: 700; color: #000; font-size: 15px; margin-bottom: 4px; line-height: 1.3; }
-  .card-addr { font-size: 13px; color: #4b5563; margin-bottom: 4px; line-height: 1.4; }
-  .card-horario { font-size: 12.5px; color: #374151; margin-bottom: 6px; }
-  .card-horario strong { color: #111827; }
-  .card-dist { font-size: 13px; color: #2563eb; font-weight: 600; margin-bottom: 8px; }
-  .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-  .badge {
-    font-size: 11px; padding: 3px 9px; border-radius: 999px; font-weight: 500;
-    background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe;
+  .card:hover { border-color: #2563eb; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .card h3 { font-weight: 700; color: #000; font-size: 15px; margin-bottom: 6px; padding-right: 30px; }
+  .card p { font-size: 13px; color: #4b5563; margin-bottom: 4px; line-height: 1.4; }
+  .card .hours { font-weight: 600; color: #111827; margin-top: 8px; font-size: 12.5px; }
+  .card .dist { font-size: 13px; color: #2563eb; font-weight: 700; margin-bottom: 8px; display: block; }
+  
+  .btn-map-pin {
+    position: absolute; top: 16px; right: 16px; background: #f3f4f6; border: none;
+    width: 32px; height: 32px; border-radius: 50%; cursor: pointer; color: #2563eb;
   }
-  .badge.b2 { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
-  .badge.b3 { background: #fef3c7; color: #92400e; border-color: #fde68a; }
-  .badge.b4 { background: #fce7f3; color: #9d174d; border-color: #fbcfe8; }
-  .badge.b5 { background: #e0f2fe; color: #075985; border-color: #bae6fd; }
-  .badge.b6 { background: #f3e8ff; color: #6b21a8; border-color: #ddd6fe; }
-  .card-actions { display: flex; gap: 8px; }
-  .btn-map {
-    font-size: 12.5px; padding: 6px 10px; border-radius: 7px; border: 1px solid #d1d5db;
-    background: #fff; color: #374151; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
-  }
-  .btn-map:hover { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
 
-  .empty, .error {
-    padding: 24px; text-align: center; color: #6b7280; font-size: 14px;
-  }
-  .error { color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; margin: 12px; }
-
-  .map-wrap { flex: 1; position: relative; }
-  #map { width: 100%; height: 100%; background: #e5e7eb; }
-
-  .loader {
-    width: 22px; height: 22px; border: 3px solid #e5e7eb; border-top-color: #2563eb;
-    border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  #map { flex: 1; height: 100%; background: #e5e7eb; }
+  .status-bar { padding: 8px 16px; font-size: 12px; color: #6b7280; background: #fff; border-bottom: 1px solid #e5e7eb; }
 
   @media (max-width: 768px) {
-    .app { flex-direction: column; height: auto; }
-    .sidebar { width: 100%; max-width: 100%; min-width: 0; height: 50vh; }
-    .map-wrap { height: 50vh; }
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; height: 50%; }
+    #map { height: 50%; }
   }
 </style>
 </head>
 <body>
 
 <header>
+  <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
   <h1>Localizador Parceiros Sema MPDFT</h1>
 </header>
+
+<div class="status-bar" id="status">Carregando dados da planilha...</div>
 
 <div class="app">
   <aside class="sidebar">
     <div class="search-box">
-      <input id="searchInput" type="text" placeholder="Buscar em todos os campos (nome, endereço, programa, cidade, CEP, horário)..." />
-      <div class="search-actions">
+      <h2>Filtros</h2>
+      <input type="text" id="searchInput" placeholder="Busque por nome, programa, cidade, CEP..." />
+      <div class="btn-row">
         <button class="btn btn-primary" id="gpsBtn">📍 Usar meu GPS</button>
-        <button class="btn btn-ghost" id="clearBtn">Limpar busca</button>
+        <button class="btn" onclick="location.reload()">Limpar busca</button>
       </div>
-      <div class="status" id="status">Carregando dados...</div>
     </div>
-    <div class="results" id="results">
-      <div class="empty"><span class="loader"></span> Carregando instituições...</div>
-    </div>
+    <div class="results" id="results"></div>
   </aside>
-
-  <div class="map-wrap">
-    <div id="map"></div>
-  </div>
+  <div id="map"></div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const SHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
-const CACHE_KEY = 'sema_mpdft_geocode_cache_v14';
-const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org/search';
+const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 
-let allData = [];
-let map = null;
-let markersLayer = null;
-let userMarker = null;
-let userLocation = null;
-let currentQuery = '';
-
-const resultsEl = document.getElementById('results');
-const statusEl = document.getElementById('status');
-const searchInput = document.getElementById('searchInput');
-const clearBtn = document.getElementById('clearBtn');
-const gpsBtn = document.getElementById('gpsBtn');
+let institutions = [];
+let map, markersLayer;
+let userLoc = null;
 
 function initMap() {
-  map = L.map('map', { zoomControl: true }).setView([-15.7939, -47.8828], 11);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap', maxZoom: 19
-  }).addTo(map);
+  map = L.map('map').setView([-15.7939, -47.8828], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
   markersLayer = L.layerGroup().addTo(map);
 }
 
-function getCache() {
-  try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; }
-  catch { return {}; }
+async function loadData() {
+  try {
+    const res = await fetch(GVIZ_URL);
+    const text = await res.text();
+    const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
+    const rows = json.table.rows;
+    
+    institutions = rows.map((r, i) => ({
+      id: i,
+      nome: r.c[0]?.v || '',
+      endereco: r.c[1]?.v || '',
+      horario: r.c[3]?.v || 'Não informado',
+      programa: r.c[4]?.v || '',
+      cidade: r.c[2]?.v || '',
+      lat: null, lon: null, dist: 9999
+    })).filter(it => it.nome);
+
+    document.getElementById('status').innerText = `${institutions.length} instituições carregadas.`;
+    render();
+    geocodeAll();
+  } catch (e) {
+    document.getElementById('results').innerHTML = '<div style="padding:20px;color:red;font-weight:700;">Erro ao carregar dados. Verifique se a planilha está "Publicada na Web".</div>';
+  }
 }
-function setCacheEntry(addr, lat, lon) {
-  const c = getCache();
-  c[addr] = { lat, lon, t: Date.now() };
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(c)); } catch {}
+
+async function geocodeAll() {
+  const cache = JSON.parse(localStorage.getItem('sema_cache_v15') || '{}');
+  for (let it of institutions) {
+    const key = it.endereco.toLowerCase().trim();
+    if (cache[key]) {
+      it.lat = cache[key].lat; it.lon = cache[key].lon;
+    } else {
+      try {
+        const res = await fetch(`${NOMINATIM}?q=${encodeURIComponent(it.endereco + ', DF, Brasil')}&format=json&limit=1`);
+        const data = await res.json();
+        if (data[0]) {
+          it.lat = parseFloat(data[0].lat); it.lon = parseFloat(data[0].lon);
+          cache[key] = { lat: it.lat, lon: it.lon };
+          localStorage.setItem('sema_cache_v15', JSON.stringify(cache));
+          render();
+        }
+      } catch (e) {}
+      await new Promise(r => setTimeout(r, 1200));
+    }
+  }
 }
 
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const dLat = (lat2-lat1)*Math.PI/180;
+  const dLon = (lon2-lon1)*Math.PI/180;
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return 2*R*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-function isValidCoord(v) {
-  if (v == null) return false;
-  const s = String(v).trim().toLowerCase();
-  if (!s) return false;
-  if (s.includes('erro de conexão') || s.includes('erro') || s.includes('null') || s.includes('undefined')) return false;
-  const n = parseFloat(s);
-  return !isNaN(n) && isFinite(n) && Math.abs(n) > 0.0001;
-}
-
-function normalizeHeader(h) {
-  return String(h || '').trim().toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
-
-function findCol(headers, candidates) {
-  for (const c of candidates) {
-    const idx = headers.findIndex(h => h === c);
-    if (idx >= 0) return idx;
-  }
-  for (const c of candidates) {
-    const idx = headers.findIndex(h => h.includes(c));
-    if (idx >= 0) return idx;
-  }
-  return -1;
-}
-
-async function loadSheet() {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=1`;
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error('HTTP ' + resp.status);
-  const text = await resp.text();
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start < 0 || end < 0) throw new Error('JSON inválido');
-  const json = JSON.parse(text.substring(start, end + 1));
-  if (!json.table || !json.table.rows) throw new Error('Estrutura inválida');
-
-  const cols = json.table.cols || [];
-  const headers = cols.map(c => normalizeHeader(c.label || c.id || ''));
-
-  const idxName = findCol(headers, ['nome', 'instituicao', 'razao social', 'parceiro']);
-  const idxAddr = findCol(headers, ['endereco', 'rua', 'logradouro']);
-  const idxCity = findCol(headers, ['cidade', 'municipio']);
-  const idxState = findCol(headers, ['uf', 'estado']);
-  const idxCep = findCol(headers, ['cep']);
-  const idxProg = findCol(headers, ['programa', 'programas', 'area']);
-  const idxHora = findCol(headers, ['horario', 'funcionamento', 'horario de funcionamento']);
-  const idxLat = findCol(headers, ['latitude', 'lat']);
-  const idxLon = findCol(headers, ['longitude', 'lon', 'lng', 'long']);
-
-  const rows = json.table.rows;
-  const data = [];
-  for (const row of rows) {
-    const cells = row.c || [];
-    const get = (i) => (i >= 0 && cells[i] && cells[i].v != null) ? String(cells[i].v).trim() : '';
-    const name = get(idxName);
-    if (!name) continue;
-    const addr = get(idxAddr);
-    const city = get(idxCity);
-    const state = get(idxState);
-    const cep = get(idxCep);
-    const prog = get(idxProg);
-    const hora = get(idxHora);
-    const latRaw = get(idxLat);
-    const lonRaw = get(idxLon);
-
-    let lat = null, lon = null;
-    if (isValidCoord(latRaw) && isValidCoord(lonRaw)) {
-      lat = parseFloat(latRaw);
-      lon = parseFloat(lonRaw);
-    }
-
-    const fullAddr = [addr, city, state, cep].filter(Boolean).join(', ');
-
-    data.push({
-      name, addr, city, state, cep, prog, hora,
-      fullAddr, lat, lon,
-      distance: null
-    });
-  }
-  return data;
-}
-
-function buildFullAddress(item) {
-  return [item.addr, item.city, item.state, item.cep].filter(Boolean).join(', ');
-}
-
-async function geocodeAddress(address) {
-  const cache = getCache();
-  if (cache[address]) return cache[address];
-  const url = `${NOMINATIM_BASE}?format=json&q=${encodeURIComponent(address)}&limit=1&countrycodes=br`;
-  try {
-    const resp = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
-    if (!resp.ok) return null;
-    const arr = await resp.json();
-    if (Array.isArray(arr) && arr.length > 0) {
-      const r = arr[0];
-      const entry = { lat: parseFloat(r.lat), lon: parseFloat(r.lon), t: Date.now() };
-      cache[address] = entry;
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
-      return entry;
-    }
-  } catch (e) { console.warn('Geocode fail:', address, e); }
-  return null;
-}
-
-async function geocodeInBackground() {
-  for (const item of allData) {
-    if (item.lat != null && item.lon != null) continue;
-    const addr = item.fullAddr || buildFullAddress(item);
-    if (!addr) continue;
-    const res = await geocodeAddress(addr);
-    if (res) {
-      item.lat = res.lat;
-      item.lon = res.lon;
-      if (userLocation) computeDistances();
-      renderResults();
-      renderMarkers();
-    }
-    await new Promise(r => setTimeout(r, 1100)); // respeita rate limit do Nominatim
-  }
-  statusEl.textContent = userLocation ? 'Coordenadas atualizadas. Lista ordenada por proximidade.' : 'Coordenadas atualizadas em segundo plano.';
-}
-
-function computeDistances() {
-  if (!userLocation) return;
-  for (const item of allData) {
-    if (item.lat != null && item.lon != null) {
-      item.distance = haversine(userLocation.lat, userLocation.lon, item.lat, item.lon);
-    }
-  }
-}
-
-function sortByDistance(arr) {
-  return arr.slice().sort((a, b) => {
-    const da = (a.distance == null) ? Infinity : a.distance;
-    const db = (b.distance == null) ? Infinity : b.distance;
-    return da - db;
-  });
-}
-
-function filterData(query) {
-  if (!query) return allData.slice();
-  const q = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  return allData.filter(item => {
-    const blob = [
-      item.name, item.addr, item.city, item.state, item.cep, item.prog, item.hora, item.fullAddr
-    ].join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    return blob.includes(q);
-  });
-}
-
-function badgeClass(prog) {
-  const s = (prog || '').toLowerCase();
-  if (s.includes('crianca') || s.includes('criança') || s.includes('idoso')) return 'b2';
-  if (s.includes('mulher') || s.includes('genero') || s.includes('gênero')) return 'b4';
-  if (s.includes('saude') || s.includes('saúde')) return 'b5';
-  if (s.includes('educacao') || s.includes('educação') || s.includes('cultura')) return 'b6';
-  if (s.includes('aliment') || s.includes('comida') || s.includes('cesta')) return 'b3';
-  return '';
-}
-
-function escapeHtml(s) {
-  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function renderResults() {
-  let list = filterData(currentQuery);
-  if (userLocation) {
-    computeDistances();
-    list = sortByDistance(list);
-  }
-
-  if (list.length === 0) {
-    resultsEl.innerHTML = '<div class="empty">Nenhuma instituição encontrada para a busca.</div>';
-    return;
-  }
-
-  const html = list.map((item, i) => {
-    const progs = (item.prog || 'Não informado').split(/[,;|]/).map(s => s.trim()).filter(Boolean);
-    const badges = progs.map(p => `<span class="badge ${badgeClass(p)}">${escapeHtml(p)}</span>`).join('');
-    const dist = (item.distance != null)
-      ? `<div class="card-dist">📍 ${item.distance.toFixed(1)} km</div>`
-      : (userLocation ? '<div class="card-dist">📍 Aguardando coordenadas...</div>' : '');
-    const hora = item.hora || 'Não informado';
-    return `
-      <div class="card" data-idx="${i}">
-        <div class="card-name">${escapeHtml(item.name)}</div>
-        <div class="card-addr">${escapeHtml(item.fullAddr || buildFullAddress(item))}</div>
-        <div class="card-horario"><strong>Horário:</strong> ${escapeHtml(hora)}</div>
-        ${dist}
-        <div class="badges">${badges || '<span class="badge">Não informado</span>'}</div>
-        <div class="card-actions">
-          <button class="btn-map" data-name="${escapeHtml(item.name)}" data-lat="${item.lat ?? ''}" data-lon="${item.lon ?? ''}">📍 Ver no Mapa</button>
-        </div>
-      </div>`;
-  }).join('');
-
-  resultsEl.innerHTML = html;
-
-  resultsEl.querySelectorAll('.btn-map').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const lat = parseFloat(btn.dataset.lat);
-      const lon = parseFloat(btn.dataset.lon);
-      if (!isNaN(lat) && !isNaN(lon) && map) {
-        map.setView([lat, lon], 16);
-      } else {
-        statusEl.textContent = 'Coordenadas ainda não disponíveis para esta instituição. Aguarde a geocodificação.';
-      }
-    });
-  });
-}
-
-function renderMarkers() {
-  if (!markersLayer) return;
+function render() {
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  const container = document.getElementById('results');
+  container.innerHTML = '';
   markersLayer.clearLayers();
-  const blueIcon = L.divIcon({
-    className: '',
-    html: '<div style="width:18px;height:18px;background:#2563eb;border:3px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>',
-    iconSize: [18,18], iconAnchor: [9,9]
-  });
-  for (const item of allData) {
-    if (item.lat != null && item.lon != null) {
-      const m = L.marker([item.lat, item.lon], { icon: blueIcon })
-        .bindPopup(`<strong>${escapeHtml(item.name)}</strong><br>${escapeHtml(item.fullAddr)}<br><em>${escapeHtml(item.hora || 'Horário não informado')}</em>`);
-      markersLayer.addLayer(m);
-    }
+
+  let filtered = institutions.filter(it => 
+    (it.nome + it.endereco + it.programa + it.cidade).toLowerCase().includes(query)
+  );
+
+  if (userLoc) {
+    filtered.forEach(it => { if(it.lat) it.dist = haversine(userLoc.lat, userLoc.lon, it.lat, it.lon); });
+    filtered.sort((a, b) => a.dist - b.dist);
   }
+
+  filtered.forEach(it => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const distTxt = (it.dist < 9999 && userLoc) ? `<span class="dist">📍 ${it.dist.toFixed(1)} km</span>` : '';
+    card.innerHTML = `
+      ${distTxt}
+      <button class="btn-map-pin" onclick="focusMap(${it.lat},${it.lon},'${it.nome}')">📍</button>
+      <h3>${it.nome}</h3>
+      <p>${it.endereco}</p>
+      <p><strong>Programa:</strong> ${it.programa}</p>
+      <p class="hours">🕒 ${it.horario}</p>
+    `;
+    container.appendChild(card);
+    if (it.lat) L.marker([it.lat, it.lon]).addTo(markersLayer).bindPopup(`<b>${it.nome}</b><br>${it.endereco}`);
+  });
 }
 
-function renderUserMarker() {
-  if (!map || !userLocation) return;
-  if (userMarker) map.removeLayer(userMarker);
-  const icon = L.divIcon({
-    className: '',
-    html: '<div style="width:16px;height:16px;background:#ef4444;border:3px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.5);"></div>',
-    iconSize: [16,16], iconAnchor: [8,8]
-  });
-  userMarker = L.marker([userLocation.lat, userLocation.lon], { icon }).addTo(map);
-  map.setView([userLocation.lat, userLocation.lon], 12);
+function focusMap(lat, lon, n) {
+  if(lat) { map.setView([lat, lon], 16); L.popup().setLatLng([lat, lon]).setContent(`<b>${n}</b>`).openOn(map); }
 }
 
-function activateGPS() {
-  if (!navigator.geolocation) {
-    statusEl.textContent = 'Geolocalização não suportada neste navegador.';
-    return;
-  }
-  statusEl.textContent = 'Obtendo sua localização...';
+document.getElementById('searchInput').addEventListener('input', render);
+document.getElementById('gpsBtn').addEventListener('click', () => {
   navigator.geolocation.getCurrentPosition(pos => {
-    userLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-    statusEl.textContent = 'Localização ativa. Lista ordenada por proximidade.';
-    computeDistances();
-    renderResults();
-    renderUserMarker();
-  }, err => {
-    statusEl.textContent = 'Não foi possível obter sua localização: ' + err.message;
-  }, { enableHighAccuracy: true, timeout: 10000 });
-}
-
-searchInput.addEventListener('input', () => {
-  currentQuery = searchInput.value.trim();
-  renderResults();
+    userLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+    document.getElementById('status').innerText = 'Localização GPS ativa. Ordenando por proximidade.';
+    render();
+  });
 });
 
-clearBtn.addEventListener('click', () => {
-  searchInput.value = '';
-  currentQuery = '';
-  renderResults();
-});
-
-gpsBtn.addEventListener('click', activateGPS);
-
-async function main() {
-  initMap();
-  try {
-    statusEl.textContent = 'Carregando dados da planilha...';
-    allData = await loadSheet();
-    if (allData.length === 0) {
-      resultsEl.innerHTML = '<div class="empty">Nenhuma instituição encontrada na planilha.</div>';
-      statusEl.textContent = 'Planilha carregada, porém sem dados válidos.';
-      return;
-    }
-    statusEl.textContent = `${allData.length} instituições carregadas. Geocodificando em segundo plano...`;
-    renderResults();
-    renderMarkers();
-    geocodeInBackground();
-  } catch (e) {
-    console.error(e);
-    resultsEl.innerHTML = '<div class="error">Erro ao carregar dados. Verifique se a planilha está Publicada na Web e com acesso Qualquer pessoa com o link.</div>';
-    statusEl.textContent = 'Falha ao carregar planilha.';
-  }
-}
-
-main();
+initMap();
+loadData();
 </script>
 </body>
 </html>
