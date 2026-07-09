@@ -5,231 +5,579 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Localizador de Parceiros Sema MPDFT</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
-  :root { --navy: #002147; --blue: #1a73e8; --pink: #e91e63; --green: #16a34a; --red: #dc2626; --purple: #7c3aed; --gray: #6b7280; }
-  html, body { height: 100%; background: #f3f4f6; }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+  html, body { height: 100%; overflow: hidden; }
+  body { background: #f4f6f9; color: #333; }
 
-  /* Header idêntico à foto */
+  /* Header */
   header {
-    background: var(--navy); color: #fff; padding: 14px 22px;
-    display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 1000;
+    background: #002147;
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    z-index: 1000;
   }
-  header .logo-box { font-size: 28px; background: rgba(255,255,255,0.1); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-  header h1 { font-size: 19px; font-weight: 700; }
-  header p { font-size: 12px; opacity: 0.8; }
+  header .icon {
+    font-size: 30px;
+    background: rgba(255,255,255,0.12);
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  header h1 { font-size: 20px; font-weight: 700; line-height: 1.2; }
+  header p { font-size: 13px; opacity: 0.85; font-weight: 300; }
 
-  .app { display: flex; height: calc(100vh - 73px); }
+  /* Layout */
+  .container { display: flex; height: calc(100% - 78px); }
 
   /* Sidebar */
-  .sidebar { width: 420px; min-width: 420px; background: #fff; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; overflow: hidden; }
-  .sidebar-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; color: var(--navy); }
-  
-  .filters { padding: 15px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid #eee; background: #fafbfc; }
-  .input-group { display: flex; gap: 8px; }
-  .input-group input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; outline: none; }
-  .btn { border: none; cursor: pointer; border-radius: 6px; padding: 10px; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
-  .btn-blue { background: var(--blue); color: #fff; }
-  .btn-pink { background: var(--pink); color: #fff; }
-  .btn-gray { background: #e5e7eb; color: #444; }
+  .sidebar {
+    width: 420px;
+    min-width: 420px;
+    background: #fff;
+    border-right: 1px solid #e0e0e0;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-header {
+    padding: 16px 18px 10px;
+    border-bottom: 1px solid #eee;
+  }
+  .sidebar-header h2 {
+    font-size: 16px; color: #002147;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sidebar-header h2 i { color: #007bff; }
 
-  .radius-wrap { margin: 5px 0; }
-  .radius-wrap label { font-size: 12px; font-weight: 700; color: #555; display: block; margin-bottom: 5px; }
-  .radius-wrap input { width: 100%; accent-color: var(--blue); }
+  .filters { padding: 12px 18px; border-bottom: 1px solid #eee; }
+  .search-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .search-row input {
+    flex: 1; padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;
+  }
+  .search-row input:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 2px rgba(0,123,255,0.15); }
+  .btn {
+    border: none; border-radius: 6px; padding: 9px 14px; cursor: pointer; font-size: 13px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px; transition: opacity .2s, background .2s;
+  }
+  .btn:hover { opacity: 0.88; }
+  .btn-primary { background: #007bff; color: #fff; }
+  .btn-pink { background: #e83e8c; color: #fff; }
+  .btn-secondary { background: #6c757d; color: #fff; }
+  .btn-light { background: #e9ecef; color: #495057; }
 
-  .pills { display: flex; flex-wrap: wrap; gap: 6px; }
-  .pill { border: none; cursor: pointer; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; color: #fff; }
-  .pill-all { background: var(--gray); }
-  .pill-serv { background: var(--blue); }
-  .pill-pec { background: var(--green); }
-  .pill-saude { background: var(--red); }
-  .pill-pal { background: var(--purple); }
+  .location-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .location-row input { flex: 1; padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; }
+  .action-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .action-row .btn { flex: 1; justify-content: center; }
 
-  /* Lista de Resultados */
-  .results { flex: 1; overflow-y: auto; padding: 15px; background: #f9fafb; }
-  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 15px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative; }
-  .card h3 { font-size: 14px; font-weight: 700; color: #000; margin-bottom: 5px; }
-  .card p { font-size: 12px; color: #666; margin-bottom: 3px; line-height: 1.4; }
-  .card .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; color: #fff; margin-right: 4px; margin-top: 5px; }
-  .card .map-link { display: block; margin-top: 10px; color: var(--blue); font-size: 12px; font-weight: 700; text-decoration: none; }
+  .radius-block { margin-bottom: 14px; }
+  .radius-block label { font-size: 13px; font-weight: 600; color: #444; display: block; margin-bottom: 6px; }
+  .radius-block input[type=range] { width: 100%; accent-color: #007bff; }
+  .radius-value { font-size: 12px; color: #007bff; font-weight: 700; }
 
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+  .pill {
+    border: none; border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+    color: #fff; transition: transform .1s, opacity .2s;
+  }
+  .pill:hover { transform: translateY(-1px); opacity: 0.9; }
+  .pill.active { box-shadow: 0 0 0 2px #fff, 0 0 0 4px currentColor; }
+  .pill-all { background: #6c757d; color: #fff; }
+  .pill-servicos { background: #007bff; }
+  .pill-pecuniaria { background: #28a745; }
+  .pill-saude { background: #dc3545; }
+  .pill-palestras { background: #6f42c1; }
+
+  /* Results */
+  .results { flex: 1; overflow-y: auto; padding: 10px 18px; }
+  .status-bar {
+    padding: 8px 18px; background: #f8f9fa; border-top: 1px solid #eee;
+    font-size: 13px; color: #555; font-weight: 600; text-align: center;
+  }
+  .card {
+    background: #fff; border: 1px solid #e6e6e6; border-radius: 8px; padding: 12px 14px;
+    margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: box-shadow .2s;
+  }
+  .card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
+  .card .name { font-size: 15px; font-weight: 700; color: #000; margin-bottom: 4px; }
+  .card .addr { font-size: 12px; color: #666; margin-bottom: 2px; }
+  .card .cep { font-size: 12px; color: #888; margin-bottom: 2px; }
+  .card .horario { font-size: 12px; color: #555; margin-bottom: 6px; }
+  .card .horario i { color: #007bff; margin-right: 4px; }
+  .card .badges { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+  .badge {
+    font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 10px; color: #fff;
+  }
+  .badge-servicos { background: #007bff; }
+  .badge-pecuniaria { background: #28a745; }
+  .badge-saude { background: #dc3545; }
+  .badge-palestras { background: #6f42c1; }
+  .card .map-link {
+    font-size: 12px; color: #007bff; text-decoration: none; font-weight: 600; cursor: pointer;
+  }
+  .card .map-link:hover { text-decoration: underline; }
+  .card .distance { font-size: 11px; color: #28a745; font-weight: 700; margin-bottom: 6px; }
+
+  .loading { text-align: center; padding: 30px; color: #888; font-size: 13px; }
+  .loading i { font-size: 24px; margin-bottom: 8px; display: block; }
+
+  /* Map */
   #map { flex: 1; height: 100%; }
-  .footer-status { padding: 10px 15px; font-size: 12px; font-weight: 700; color: #666; border-top: 1px solid #eee; background: #fff; }
 
-  @media (max-width: 768px) { .app { flex-direction: column; } .sidebar { width: 100%; min-width: 0; height: 50%; } }
+  /* Scrollbar */
+  .results::-webkit-scrollbar { width: 8px; }
+  .results::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+  .results::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+  @media (max-width: 900px) {
+    .sidebar { width: 100%; min-width: 100%; }
+    .container { flex-direction: column; }
+    #map { height: 300px; }
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo-box"><i class="fa-solid fa-handshake"></i></div>
+  <div class="icon"><i class="fa-solid fa-handshake"></i></div>
   <div>
     <h1>Localizador de Parceiros Sema MPDFT</h1>
     <p>Encontre instituições parceiras</p>
   </div>
 </header>
 
-<div class="app">
+<div class="container">
   <aside class="sidebar">
-    <div class="sidebar-header"><i class="fa-solid fa-filter"></i> <h2>Filtros</h2></div>
+    <div class="sidebar-header">
+      <h2><i class="fa-solid fa-filter"></i> Filtros</h2>
+    </div>
+
     <div class="filters">
-      <div class="input-group">
+      <div class="search-row">
         <input type="text" id="searchInput" placeholder="Buscar por nome, endereço, programa...">
-        <button class="btn btn-blue" onclick="render()"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <button class="btn btn-primary" id="searchBtn" title="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
       </div>
-      <div class="input-group">
-        <input type="text" id="cepInput" placeholder="72426-075">
-        <button class="btn btn-pink" onclick="searchLocation()"><i class="fa-solid fa-location-dot"></i> Buscar Localização</button>
+
+      <div class="location-row">
+        <input type="text" id="cepInput" placeholder="72426-075" value="72426-075">
+        <button class="btn btn-pink" id="locationBtn" title="Buscar Localização">
+          <i class="fa-solid fa-location-dot"></i> Buscar Localização
+        </button>
       </div>
-      <div class="input-group">
-        <button class="btn btn-gray" style="flex:1" onclick="useGps()">GPS</button>
-        <button class="btn btn-gray" style="flex:1" onclick="clearFilters()"><i class="fa-solid fa-paintbrush"></i> Limpar</button>
+
+      <div class="action-row">
+        <button class="btn btn-secondary" id="gpsBtn"><i class="fa-solid fa-satellite-dish"></i> GPS</button>
+        <button class="btn btn-light" id="clearBtn"><i class="fa-solid fa-brush"></i> Limpar</button>
       </div>
-      <div class="radius-wrap">
-        <label>Raio: <span id="radVal">Sem limite</span></label>
-        <input type="range" id="radSlider" min="0" max="100" value="0" oninput="updateRadius(this.value)">
+
+      <div class="radius-block">
+        <label>Raio: <span class="radius-value" id="radiusValue">Sem limite</span></label>
+        <input type="range" id="radiusSlider" min="0" max="200" step="5" value="0">
       </div>
-      <div class="pills">
-        <button class="pill pill-all" onclick="filterCat('Todos')">Todos</button>
-        <button class="pill pill-serv" onclick="filterCat('serviços')">Serviços</button>
-        <button class="pill pill-pec" onclick="filterCat('pecuniária')">Pecuniária</button>
-        <button class="pill pill-saude" onclick="filterCat('saúde')">Saúde</button>
-        <button class="pill pill-pal" onclick="filterCat('palestras')">Palestras</button>
+
+      <div class="pills" id="pills">
+        <button class="pill pill-all active" data-cat="Todos">Todos</button>
+        <button class="pill pill-servicos" data-cat="Prestação de Serviços">Prestação de Serviços</button>
+        <button class="pill pill-pecuniaria" data-cat="Prestação Pecuniária">Prestação Pecuniária</button>
+        <button class="pill pill-saude" data-cat="Programa de Saúde">Programa de Saúde</button>
+        <button class="pill pill-palestras" data-cat="Palestras">Palestras</button>
       </div>
     </div>
-    <div class="results" id="results">Carregando dados...</div>
-    <div class="footer-status" id="status">0 instituições encontradas</div>
+
+    <div class="results" id="results">
+      <div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Carregando instituições...</div>
+    </div>
+
+    <div class="status-bar" id="statusBar">0 instituições encontradas</div>
   </aside>
+
   <div id="map"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const SHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
-// Método CSV é mais estável para evitar erros de carregamento
-const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
-const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
+const CSV_URL = "https://docs.google.com/spreadsheets/d/179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw/export?format=csv";
+const CACHE_KEY = "sema_mpdft_geocode_cache_v17";
+const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 
-let partners = [];
-let map, markersLayer;
-let userLoc = null;
-let radius = 0;
-let currentCat = 'Todos';
+let allInstitutions = [];
+let filteredInstitutions = [];
+let referencePoint = null; // {lat, lng}
+let activeCategory = "Todos";
+let searchTerm = "";
+let radiusKm = 0; // 0 = sem limite
+let map = null;
+let markersLayer = null;
+let refMarker = null;
+
+// ---------- Init ----------
+window.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  bindEvents();
+  loadData();
+});
 
 function initMap() {
-  map = L.map('map').setView([-15.7942, -47.8822], 11);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  map = L.map('map').setView([-15.7801, -47.9292], 11); // Brasília
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap', maxZoom: 19
+  }).addTo(map);
   markersLayer = L.layerGroup().addTo(map);
 }
 
+function bindEvents() {
+  document.getElementById('searchInput').addEventListener('input', e => {
+    searchTerm = e.target.value.toLowerCase().trim();
+    render();
+  });
+  document.getElementById('searchBtn').addEventListener('click', () => render());
+
+  document.getElementById('locationBtn').addEventListener('click', () => {
+    const cep = document.getElementById('cepInput').value.trim();
+    if (cep) geocodeCEP(cep);
+  });
+
+  document.getElementById('gpsBtn').addEventListener('click', () => {
+    if (!navigator.geolocation) { alert('Geolocalização não suportada.'); return; }
+    navigator.geolocation.getCurrentPosition(pos => {
+      referencePoint = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setReferenceMarker(referencePoint, 'Sua localização (GPS)');
+      render();
+    }, () => alert('Não foi possível obter sua localização.'));
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('cepInput').value = '';
+    searchTerm = '';
+    referencePoint = null;
+    if (refMarker) { map.removeLayer(refMarker); refMarker = null; }
+    document.getElementById('radiusSlider').value = 0;
+    radiusKm = 0;
+    document.getElementById('radiusValue').textContent = 'Sem limite';
+    activeCategory = "Todos";
+    updatePills();
+    render();
+  });
+
+  const slider = document.getElementById('radiusSlider');
+  slider.addEventListener('input', e => {
+    radiusKm = parseInt(e.target.value, 10);
+    document.getElementById('radiusValue').textContent = radiusKm === 0 ? 'Sem limite' : radiusKm + ' km';
+    render();
+  });
+
+  document.querySelectorAll('.pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      activeCategory = pill.dataset.cat;
+      updatePills();
+      render();
+    });
+  });
+}
+
+function updatePills() {
+  document.querySelectorAll('.pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.cat === activeCategory);
+  });
+}
+
+// ---------- Data Loading ----------
 async function loadData() {
   try {
     const res = await fetch(CSV_URL);
-    const csv = await res.text();
-    const rows = csv.split('\n').slice(1); // Pula cabeçalho
-    
-    partners = rows.map((row, i) => {
-      const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); // Split inteligente para CSV
+    let text = await res.text();
+    // Handle BOM
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    const rows = parseCSV(text);
+    if (rows.length < 2) throw new Error('CSV vazio');
+
+    const headers = rows[0].map(h => h.trim().toLowerCase());
+    const idx = name => headers.findIndex(h => h === name || h.includes(name));
+
+    const cName = idx('nome') >= 0 ? idx('nome') : idx('instituicao');
+    const cAddr = idx('endereco') >= 0 ? idx('endereco') : idx('rua');
+    const cCep = idx('cep');
+    const cHorario = idx('horario') >= 0 ? idx('horario') : idx('funcionamento');
+    const cProgramas = idx('programa') >= 0 ? idx('programa') : idx('programas');
+    const cBairro = idx('bairro');
+    const cCidade = idx('cidade') >= 0 ? idx('cidade') : idx('municipio');
+    const cEstado = idx('estado') >= 0 ? idx('estado') : idx('uf');
+
+    allInstitutions = rows.slice(1).filter(r => r.length > 1).map((r, i) => {
+      const get = c => c >= 0 && c < r.length ? (r[c] || '').trim() : '';
+      const nome = get(cName) || `Instituição ${i+1}`;
+      const endereco = get(cAddr);
+      const cep = get(cCep);
+      const bairro = get(cBairro);
+      const cidade = get(cCidade);
+      const estado = get(cEstado);
+      const horario = get(cHorario);
+      const programasRaw = get(cProgramas);
+      const programas = parseProgramas(programasRaw);
+      const fullAddr = [endereco, bairro, cidade, estado, cep].filter(Boolean).join(', ');
       return {
-        id: i,
-        nome: (cols[0] || '').replace(/"/g, ''),
-        endereco: (cols[1] || '').replace(/"/g, ''),
-        cep: (cols[2] || '').replace(/"/g, ''),
-        horario: (cols[3] || '').replace(/"/g, ''),
-        programa: (cols[4] || '').replace(/"/g, ''),
-        lat: null, lng: null, dist: 9999
+        id: i, nome, endereco, cep, bairro, cidade, estado, horario,
+        programas, fullAddr, lat: null, lng: null, geocoding: false, distance: null
       };
-    }).filter(p => p.nome.length > 3);
+    });
 
     render();
-    geocodeAll();
-  } catch (e) {
-    document.getElementById('results').innerHTML = '<b style="color:red">Erro ao carregar. Verifique se a planilha está "Publicada na Web".</b>';
+    // Geocode em segundo plano
+    geocodeAllInBackground();
+  } catch (err) {
+    console.error(err);
+    document.getElementById('results').innerHTML =
+      '<div class="loading"><i class="fa-solid fa-triangle-exclamation"></i> Erro ao carregar dados. Verifique sua conexão.</div>';
   }
 }
 
-async function geocodeAll() {
-  const cache = JSON.parse(localStorage.getItem('sema_cache_v16') || '{}');
-  for (let p of partners) {
-    const key = p.endereco.toLowerCase().trim();
-    if (cache[key]) { p.lat = cache[key].lat; p.lng = cache[key].lng; }
-    else {
-      try {
-        const res = await fetch(`${NOMINATIM}?q=${encodeURIComponent(p.endereco + ', DF, Brasil')}&format=json&limit=1`);
-        const data = await res.json();
-        if (data[0]) {
-          p.lat = parseFloat(data[0].lat); p.lng = parseFloat(data[0].lon);
-          cache[key] = { lat: p.lat, lng: p.lng };
-          localStorage.setItem('sema_cache_v16', JSON.stringify(cache));
-          render();
-        }
-      } catch (e) {}
-      await new Promise(r => setTimeout(r, 1200));
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i], next = text[i+1];
+    if (inQuotes) {
+      if (ch === '"' && next === '"') { field += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { field += ch; }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (ch === '\r') { /* skip */ }
+      else { field += ch; }
     }
   }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(c => c.trim() !== ''));
 }
 
+function parseProgramas(raw) {
+  if (!raw) return [];
+  const known = ['Prestação de Serviços','Prestação Pecuniária','Programa de Saúde','Palestras'];
+  const lower = raw.toLowerCase();
+  const found = [];
+  known.forEach(k => { if (lower.includes(k.toLowerCase())) found.push(k); });
+  if (found.length === 0 && raw.trim()) {
+    // split por separadores comuns
+    raw.split(/[;,/|]/).map(s => s.trim()).filter(Boolean).forEach(s => found.push(s));
+  }
+  return found;
+}
+
+function badgeClass(prog) {
+  const l = prog.toLowerCase();
+  if (l.includes('serviço') || l.includes('servico')) return 'badge-servicos';
+  if (l.includes('pecuniária') || l.includes('pecuniaria')) return 'badge-pecuniaria';
+  if (l.includes('saúde') || l.includes('saude')) return 'badge-saude';
+  if (l.includes('palestras') || l.includes('palestra')) return 'badge-palestras';
+  return 'badge-servicos';
+}
+
+// ---------- Geocoding ----------
+function getCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
+  catch { return {}; }
+}
+function setCache(cache) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
+}
+
+async function geocodeAddress(query) {
+  const cache = getCache();
+  if (cache[query]) return cache[query];
+  try {
+    const url = `${NOMINATIM_URL}?format=json&limit=1&q=${encodeURIComponent(query)}&countrycodes=br`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.length > 0) {
+      const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      cache[query] = result;
+      setCache(cache);
+      return result;
+    }
+  } catch (e) { console.warn('Geocode error', e); }
+  cache[query] = null;
+  setCache(cache);
+  return null;
+}
+
+async function geocodeCEP(cep) {
+  const clean = cep.replace(/\D/g, '');
+  const query = clean.length === 8 ? `${clean}, Brasil` : cep + ', Brasil';
+  const result = await geocodeAddress(query);
+  if (result) {
+    referencePoint = result;
+    setReferenceMarker(result, `Localização: ${cep}`);
+    render();
+  } else {
+    alert('Localização não encontrada para: ' + cep);
+  }
+}
+
+function setReferenceMarker(point, label) {
+  if (refMarker) map.removeLayer(refMarker);
+  const pinkIcon = L.divIcon({
+    className: '',
+    html: '<i class="fa-solid fa-location-dot" style="color:#e83e8c;font-size:32px;text-shadow:0 2px 4px rgba(0,0,0,0.4);"></i>',
+    iconSize: [32,32], iconAnchor: [16,32]
+  });
+  refMarker = L.marker([point.lat, point.lng], { icon: pinkIcon }).addTo(map)
+    .bindPopup(label);
+  map.setView([point.lat, point.lng], 13);
+}
+
+async function geocodeAllInBackground() {
+  for (const inst of allInstitutions) {
+    if (inst.lat !== null || inst.geocoding || !inst.fullAddr) continue;
+    inst.geocoding = true;
+    const result = await geocodeAddress(inst.fullAddr);
+    inst.geocoding = false;
+    if (result) { inst.lat = result.lat; inst.lng = result.lng; }
+    // Atualiza distância se houver referência
+    if (referencePoint && result) {
+      inst.distance = haversine(referencePoint.lat, referencePoint.lng, result.lat, result.lng);
+    }
+    // Re-render progressivo (throttle simples)
+    render();
+    // Respeita rate limit do Nominatim (1 req/seg)
+    await new Promise(r => setTimeout(r, 1100));
+  }
+}
+
+// ---------- Filtering & Rendering ----------
 function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2-lat1)*Math.PI/180;
-  const dLon = (lon2-lon1)*Math.PI/180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return 2*R*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const R = 6371, toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function applyFilters() {
+  let list = allInstitutions.slice();
+
+  if (searchTerm) {
+    list = list.filter(i =>
+      (i.nome && i.nome.toLowerCase().includes(searchTerm)) ||
+      (i.endereco && i.endereco.toLowerCase().includes(searchTerm)) ||
+      (i.cep && i.cep.includes(searchTerm)) ||
+      (i.programas.join(' ').toLowerCase().includes(searchTerm)) ||
+      (i.fullAddr && i.fullAddr.toLowerCase().includes(searchTerm))
+    );
+  }
+
+  if (activeCategory !== "Todos") {
+    list = list.filter(i => i.programas.some(p => p.toLowerCase().includes(activeCategory.toLowerCase())));
+  }
+
+  if (radiusKm > 0 && referencePoint) {
+    list = list.filter(i => i.distance !== null && i.distance <= radiusKm);
+  }
+
+  // Ordenação por distância (mais próxima primeiro) quando há referência
+  if (referencePoint) {
+    list.forEach(i => {
+      if (i.lat !== null && i.distance === null) {
+        i.distance = haversine(referencePoint.lat, referencePoint.lng, i.lat, i.lng);
+      }
+    });
+    list.sort((a, b) => {
+      if (a.distance === null && b.distance === null) return 0;
+      if (a.distance === null) return 1;
+      if (b.distance === null) return -1;
+      return a.distance - b.distance;
+    });
+  }
+
+  return list;
 }
 
 function render() {
-  const query = document.getElementById('searchInput').value.toLowerCase();
-  const resultsDiv = document.getElementById('results');
-  resultsDiv.innerHTML = '';
-  markersLayer.clearLayers();
+  filteredInstitutions = applyFilters();
+  renderList();
+  renderMarkers();
+  document.getElementById('statusBar').textContent =
+    `${filteredInstitutions.length} instituições encontradas`;
+}
 
-  let filtered = partners.filter(p => {
-    const text = (p.nome + p.endereco + p.programa).toLowerCase();
-    const matchSearch = text.includes(query);
-    const matchCat = currentCat === 'Todos' || p.programa.toLowerCase().includes(currentCat);
-    return matchSearch && matchCat;
-  });
-
-  if (userLoc) {
-    filtered.forEach(p => { if(p.lat) p.dist = haversine(userLoc.lat, userLoc.lng, p.lat, p.lng); });
-    if (radius > 0) filtered = filtered.filter(p => p.dist <= radius);
-    filtered.sort((a, b) => a.dist - b.dist);
+function renderList() {
+  const container = document.getElementById('results');
+  if (filteredInstitutions.length === 0) {
+    container.innerHTML = '<div class="loading"><i class="fa-solid fa-magnifying-glass"></i> Nenhuma instituição encontrada com os filtros atuais.</div>';
+    return;
   }
 
-  filtered.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    const distTxt = (p.dist < 9999 && userLoc) ? `<span style="color:var(--blue);font-weight:700">${p.dist.toFixed(1)} km</span>` : '';
-    card.innerHTML = `
-      <h3>${p.nome}</h3>
-      <p><i class="fa-solid fa-location-dot"></i> ${p.endereco}</p>
-      <p><i class="fa-solid fa-clock"></i> ${p.horario}</p>
-      <div class="badge" style="background:var(--blue)">${p.programa}</div>
-      <div style="margin-top:8px">${distTxt}</div>
-      <a href="#" class="map-link" onclick="focusMap(${p.lat},${p.lng},'${p.nome}')">Ver no Mapa</a>
-    `;
-    resultsDiv.appendChild(card);
-    if (p.lat) L.marker([p.lat, p.lng]).addTo(markersLayer).bindPopup(`<b>${p.nome}</b>`);
+  container.innerHTML = filteredInstitutions.map(inst => {
+    const badges = inst.programas.map(p =>
+      `<span class="badge ${badgeClass(p)}">${escapeHtml(p)}</span>`
+    ).join('');
+    const dist = inst.distance !== null
+      ? `<div class="distance"><i class="fa-solid fa-route"></i> ${inst.distance.toFixed(1)} km de distância</div>`
+      : '';
+    const horario = inst.horario
+      ? `<div class="horario"><i class="fa-regular fa-clock"></i> ${escapeHtml(inst.horario)}</div>`
+      : '';
+    const cep = inst.cep ? `<div class="cep">CEP: ${escapeHtml(inst.cep)}</div>` : '';
+    const addr = inst.endereco || inst.bairro || inst.cidade
+      ? `<div class="addr"><i class="fa-solid fa-location-dot" style="color:#e83e8c;margin-right:4px;"></i>${escapeHtml([inst.endereco, inst.bairro, inst.cidade].filter(Boolean).join(', '))}</div>`
+      : '';
+
+    return `<div class="card">
+      <div class="name">${escapeHtml(inst.nome)}</div>
+      ${addr}
+      ${cep}
+      ${horario}
+      ${dist}
+      <div class="badges">${badges}</div>
+      <a class="map-link" onclick="focusMarker(${inst.id})"><i class="fa-solid fa-map-location-dot"></i> Ver no Mapa</a>
+    </div>`;
+  }).join('');
+}
+
+function renderMarkers() {
+  markersLayer.clearLayers();
+  filteredInstitutions.forEach(inst => {
+    if (inst.lat === null || inst.lng === null) return;
+    const blueIcon = L.divIcon({
+      className: '',
+      html: '<i class="fa-solid fa-map-pin" style="color:#007bff;font-size:28px;text-shadow:0 2px 4px rgba(0,0,0,0.4);"></i>',
+      iconSize: [28,28], iconAnchor: [14,28]
+    });
+    const m = L.marker([inst.lat, inst.lng], { icon: blueIcon })
+      .bindPopup(`<strong>${escapeHtml(inst.nome)}</strong><br>${escapeHtml(inst.fullAddr)}`);
+    m._instId = inst.id;
+    markersLayer.addLayer(m);
   });
-
-  document.getElementById('status').innerText = `${filtered.length} instituições encontradas`;
 }
 
-function focusMap(lat, lng, n) { if(lat) { map.setView([lat, lng], 16); L.popup().setLatLng([lat, lng]).setContent(`<b>${n}</b>`).openOn(map); } }
-function updateRadius(v) { radius = parseInt(v); document.getElementById('radVal').innerText = v == 0 ? 'Sem limite' : v + ' km'; render(); }
-function filterCat(c) { currentCat = c; render(); }
-function clearFilters() { document.getElementById('searchInput').value = ''; currentCat = 'Todos'; render(); }
-async function searchLocation() {
-  const val = document.getElementById('cepInput').value;
-  const res = await fetch(`${NOMINATIM}?q=${encodeURIComponent(val + ', DF, Brasil')}&format=json&limit=1`);
-  const data = await res.json();
-  if (data[0]) { userLoc = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }; render(); }
-}
-function useGps() { navigator.geolocation.getCurrentPosition(pos => { userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude }; render(); }); }
+window.focusMarker = function(id) {
+  const inst = allInstitutions.find(i => i.id === id);
+  if (!inst || inst.lat === null) {
+    alert('Localização ainda não disponível. A geocodificação está em andamento.');
+    return;
+  }
+  map.setView([inst.lat, inst.lng], 16);
+  markersLayer.eachLayer(m => {
+    if (m._instId === id) m.openPopup();
+  });
+};
 
-initMap();
-loadData();
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 </script>
 </body>
 </html>
