@@ -6,200 +6,187 @@
 <title>Localizador de Parceiros Sema MPDFT</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-html, body { height: 100%; overflow: hidden; background: #f4f6f9; }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+  html, body { height: 100%; background: #f4f6f9; color: #1a1a1a; }
 
-/* Header */
-header {
-  background: #002147;
-  color: #fff;
-  padding: 14px 24px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  z-index: 1000;
-}
-header .icon { font-size: 32px; }
-header h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.3px; }
-header p { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+  /* Header */
+  header {
+    background: #002147;
+    color: #ffffff;
+    padding: 14px 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    z-index: 1000;
+  }
+  header .icon { font-size: 30px; line-height: 1; }
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.3px; }
+  header p { font-size: 13px; opacity: 0.85; margin-top: 2px; }
 
-/* Layout */
-#app { display: flex; height: calc(100% - 70px); }
+  /* Layout */
+  .app { display: flex; height: calc(100vh - 72px); }
 
-/* Sidebar */
-#sidebar {
-  width: 420px;
-  min-width: 420px;
-  background: #fff;
-  border-right: 1px solid #e0e0e0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-#filters {
-  padding: 16px;
-  border-bottom: 1px solid #eee;
-  overflow-y: auto;
-}
-#filters h2 {
-  font-size: 16px;
-  color: #002147;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-.field { margin-bottom: 12px; }
-.field label { display: block; font-size: 12px; color: #555; margin-bottom: 4px; font-weight: 600; }
-.input-group { display: flex; gap: 6px; }
-.input-group input {
-  flex: 1;
-  padding: 9px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 13px;
-  outline: none;
-}
-.input-group input:focus { border-color: #002147; box-shadow: 0 0 0 2px rgba(0,33,71,0.15); }
-.btn {
-  padding: 9px 12px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: 0.15s;
-}
-.btn-blue { background: #002147; color: #fff; }
-.btn-blue:hover { background: #013a6b; }
-.btn-pink { background: #e91e63; color: #fff; }
-.btn-pink:hover { background: #d81b60; }
-.btn-gray { background: #6c757d; color: #fff; }
-.btn-gray:hover { background: #5a6268; }
-.btn-row { display: flex; gap: 6px; margin-top: 6px; }
-.btn-row .btn { flex: 1; }
+  /* Sidebar */
+  .sidebar {
+    width: 420px;
+    min-width: 420px;
+    background: #ffffff;
+    border-right: 1px solid #e1e5ec;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .filters {
+    padding: 14px 16px;
+    border-bottom: 1px solid #eef1f5;
+    overflow-y: auto;
+  }
+  .filters h2 {
+    font-size: 15px;
+    color: #002147;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: #555; margin-bottom: 4px; font-weight: 600; }
 
-/* Slider */
-.slider-wrap { margin-top: 4px; }
-.slider-wrap .label-row { display: flex; justify-content: space-between; font-size: 12px; color: #555; margin-bottom: 6px; }
-.slider-wrap .label-row strong { color: #002147; }
-input[type=range] { width: 100%; accent-color: #002147; }
+  .search-row { display: flex; gap: 6px; }
+  .search-row input {
+    flex: 1;
+    padding: 9px 10px;
+    border: 1px solid #ccd3dc;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+  }
+  .search-row input:focus { border-color: #002147; box-shadow: 0 0 0 2px rgba(0,33,71,0.12); }
+  .btn {
+    border: none;
+    border-radius: 6px;
+    padding: 9px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: filter 0.15s ease;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .btn-blue { background: #002147; color: #fff; }
+  .btn-pink { background: #d6336c; color: #fff; }
+  .btn-gray { background: #e9ecef; color: #333; }
+  .btn-green { background: #2a9d8f; color: #fff; }
 
-/* Pills */
-.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.pill {
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: 0.15s;
-  color: #fff;
-}
-.pill.active { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #002147; }
-.pill.todos { background: #6c757d; }
-.pill.servicos { background: #007bff; }
-.pill.pecuniaria { background: #28a745; }
-.pill.saude { background: #dc3545; }
-.pill.palestras { background: #6f42c1; }
+  .btn-group { display: flex; gap: 6px; margin-top: 6px; }
 
-/* Results */
-#results-header {
-  padding: 10px 16px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #eee;
-  font-size: 13px;
-  color: #333;
-  font-weight: 600;
-}
-#results {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-}
-.card {
-  background: #fff;
-  border: 1px solid #e3e6ec;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  transition: 0.15s;
-}
-.card:hover { border-color: #002147; box-shadow: 0 2px 8px rgba(0,33,71,0.12); }
-.card .name { font-size: 14px; font-weight: 700; color: #111; margin-bottom: 4px; }
-.card .meta { font-size: 12px; color: #666; line-height: 1.5; }
-.card .meta .row { display: flex; gap: 6px; align-items: flex-start; margin-bottom: 2px; }
-.card .meta .row .ico { width: 14px; text-align: center; }
-.card .badges { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
-.badge {
-  font-size: 10px;
-  padding: 3px 8px;
-  border-radius: 10px;
-  color: #fff;
-  font-weight: 600;
-}
-.badge.servicos { background: #007bff; }
-.badge.pecuniaria { background: #28a745; }
-.badge.saude { background: #dc3545; }
-.badge.palestras { background: #6f42c1; }
-.badge.outros { background: #6c757d; }
-.card .map-link {
-  display: inline-block;
-  margin-top: 6px;
-  color: #002147;
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-}
-.card .map-link:hover { text-decoration: underline; }
-.card .distance { font-size: 11px; color: #e91e63; font-weight: 700; margin-top: 4px; }
+  .radius-row { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+  .radius-row input[type=range] { flex: 1; accent-color: #002147; }
+  .radius-row .radius-value { font-size: 13px; font-weight: 600; color: #002147; min-width: 90px; text-align: right; }
 
-/* Status */
-#status {
-  padding: 10px 16px;
-  background: #002147;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-}
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .pill {
+    border: none;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    color: #fff;
+    opacity: 0.55;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .pill:hover { transform: translateY(-1px); }
+  .pill.active { opacity: 1; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+  .pill.todos { background: #6c757d; }
+  .pill.servicos { background: #0d6efd; }
+  .pill.pecuniaria { background: #2a9d8f; }
+  .pill.saude { background: #e63946; }
+  .palestras { background: #6f42c1; }
+  .pill.palestras { background: #6f42c1; }
 
-/* Map */
-#map { flex: 1; height: 100%; }
+  /* Results */
+  .results-wrap { flex: 1; overflow-y: auto; padding: 12px 16px; }
+  .status {
+    padding: 10px 16px;
+    background: #f8fafc;
+    border-top: 1px solid #eef1f5;
+    font-size: 13px;
+    color: #002147;
+    font-weight: 600;
+    text-align: center;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e6e9ef;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: box-shadow 0.15s ease;
+  }
+  .card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
+  .card h3 { font-size: 14px; color: #111; margin-bottom: 6px; }
+  .card .meta { font-size: 12px; color: #555; line-height: 1.5; }
+  .card .meta span { display: block; }
+  .badges { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
+  .badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 600;
+  }
+  .badge.servicos { background: #0d6efd; }
+  .badge.pecuniaria { background: #2a9d8f; }
+  .badge.saude { background: #e63946; }
+  .badge.palestras { background: #6f42c1; }
+  .badge.outros { background: #6c757d; }
+  .card .map-link {
+    display: inline-block;
+    margin-top: 6px;
+    color: #002147;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .card .map-link:hover { text-decoration: underline; }
+  .card .dist { font-size: 11px; color: #888; margin-top: 4px; }
 
-/* Loading / Error */
-.loading, .error {
-  padding: 30px 16px;
-  text-align: center;
-  color: #666;
-  font-size: 14px;
-}
-.error { color: #dc3545; }
-.spinner {
-  border: 3px solid #e0e0e0;
-  border-top: 3px solid #002147;
-  border-radius: 50%;
-  width: 30px; height: 30px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 12px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+  .empty, .error {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+  }
+  .error { color: #c92a2a; font-weight: 600; }
 
-/* Scrollbar */
-#results::-webkit-scrollbar, #filters::-webkit-scrollbar { width: 8px; }
-#results::-webkit-scrollbar-thumb, #filters::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+  /* Map */
+  #map { flex: 1; height: 100%; background: #e9ecef; }
 
-@media (max-width: 900px) {
-  #sidebar { width: 100%; min-width: 100%; max-height: 50%; }
-  #app { flex-direction: column; }
-  #map { height: 50%; }
-}
+  /* Loader */
+  .loader {
+    text-align: center; padding: 20px; color: #002147; font-size: 13px; font-weight: 600;
+  }
+  .spinner {
+    border: 3px solid #e1e5ec; border-top: 3px solid #002147;
+    border-radius: 50%; width: 26px; height: 26px;
+    margin: 0 auto 10px; animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .app { flex-direction: column; height: auto; }
+    .sidebar { width: 100%; min-width: 0; max-height: 60vh; }
+    #map { height: 50vh; }
+  }
 </style>
 </head>
 <body>
@@ -212,433 +199,370 @@ input[type=range] { width: 100%; accent-color: #002147; }
   </div>
 </header>
 
-<div id="app">
-  <div id="sidebar">
-    <div id="filters">
+<div class="app">
+  <aside class="sidebar">
+    <div class="filters">
       <h2>🔻 Filtros</h2>
 
       <div class="field">
         <label>Busca global</label>
-        <div class="input-group">
-          <input type="text" id="searchInput" placeholder="Buscar por nome, endereço, programa...">
+        <div class="search-row">
+          <input type="text" id="searchInput" placeholder="Buscar por nome, endereço, programa..." />
           <button class="btn btn-blue" id="searchBtn" title="Buscar">🔍</button>
         </div>
       </div>
 
       <div class="field">
         <label>Localização (CEP ou endereço)</label>
-        <div class="input-group">
-          <input type="text" id="locationInput" placeholder="Ex: 72426-075" value="72426-075">
-          <button class="btn btn-pink" id="locateBtn" title="Buscar Localização">📍 Buscar Localização</button>
+        <div class="search-row">
+          <input type="text" id="locationInput" placeholder="72426-075" value="72426-075" />
+          <button class="btn btn-pink" id="locationBtn" title="Buscar Localização">📍 Buscar Localização</button>
         </div>
-        <div class="btn-row">
-          <button class="btn btn-blue" id="gpsBtn">📡 GPS</button>
+        <div class="btn-group">
+          <button class="btn btn-green" id="gpsBtn">📡 GPS</button>
           <button class="btn btn-gray" id="clearBtn">🧹 Limpar</button>
         </div>
       </div>
 
       <div class="field">
-        <div class="slider-wrap">
-          <div class="label-row">
-            <span>Raio</span>
-            <strong id="radiusLabel">Sem limite</strong>
-          </div>
-          <input type="range" id="radiusSlider" min="0" max="200" value="0" step="5">
+        <label>Raio de busca</label>
+        <div class="radius-row">
+          <input type="range" id="radiusRange" min="0" max="500" step="10" value="0" />
+          <span class="radius-value" id="radiusValue">Sem limite</span>
         </div>
       </div>
 
       <div class="field">
-        <label>Categoria</label>
+        <label>Categorias</label>
         <div class="pills" id="pills">
-          <div class="pill todos active" data-cat="Todos">Todos</div>
-          <div class="pill servicos" data-cat="Prestação de Serviços">Prestação de Serviços</div>
-          <div class="pill pecuniaria" data-cat="Prestação Pecuniária">Prestação Pecuniária</div>
-          <div class="pill saude" data-cat="Programa de Saúde">Programa de Saúde</div>
-          <div class="pill palestras" data-cat="Palestras">Palestras</div>
+          <button class="pill todos active" data-cat="Todos">Todos</button>
+          <button class="pill servicos" data-cat="Prestação de Serviços">Prestação de Serviços</button>
+          <button class="pill pecuniaria" data-cat="Prestação Pecuniária">Prestação Pecuniária</button>
+          <button class="pill saude" data-cat="Programa de Saúde">Programa de Saúde</button>
+          <button class="pill palestras" data-cat="Palestras">Palestras</button>
         </div>
       </div>
     </div>
 
-    <div id="results-header">Resultados</div>
-    <div id="results">
-      <div class="loading"><div class="spinner"></div>Carregando instituições...</div>
+    <div class="results-wrap" id="results">
+      <div class="loader"><div class="spinner"></div>Carregando instituições...</div>
     </div>
 
-    <div id="status">0 instituições encontradas</div>
-  </div>
+    <div class="status" id="status">0 instituições encontradas</div>
+  </aside>
 
-  <div id="map"></div>
+  <main id="map"></main>
 </div>
 
 <script>
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw/export?format=csv';
-const CACHE_KEY = 'sema_mpdft_geocode_cache_v25';
-const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
+const CACHE_KEY = 'sema_mpdft_geocode_cache_v26';
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=';
 
-let allInstitutions = [];
-let filteredInstitutions = [];
+let institutions = [];
 let map, markersLayer;
 let userLocation = null;
-let currentCategory = 'Todos';
+let activeCategory = 'Todos';
 let currentRadius = 0; // 0 = sem limite
-let geocodeQueue = [];
-let geocodeRunning = false;
 
-/* ---------- Init ---------- */
-function init() {
-  initMap();
-  bindEvents();
-  loadCSV();
-}
-
+/* ---------- Map ---------- */
 function initMap() {
   map = L.map('map').setView([-15.7801, -47.9292], 11);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap',
-    maxZoom: 19
+    attribution: '&copy; OpenStreetMap', maxZoom: 19
   }).addTo(map);
   markersLayer = L.layerGroup().addTo(map);
 }
 
-function bindEvents() {
-  document.getElementById('searchInput').addEventListener('input', applyFilters);
-  document.getElementById('searchBtn').addEventListener('click', applyFilters);
+/* ---------- Helpers ---------- */
+function normalize(s) {
+  return (s || '').toString().trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+function getField(row, keys) {
+  for (const k of keys) {
+    for (const rk in row) {
+      if (normalize(rk) === normalize(k)) return (row[rk] || '').toString().trim();
+    }
+  }
+  return '';
+}
+function buildAddress(inst) {
+  return [inst.endereco, inst.cidade, inst.estado, inst.cep].filter(Boolean).join(', ');
+}
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371, toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
 
-  document.getElementById('locateBtn').addEventListener('click', () => {
-    const q = document.getElementById('locationInput').value.trim();
-    if (q) geocodeUserLocation(q);
+/* ---------- Cache ---------- */
+function loadCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; }
+  catch { return {}; }
+}
+function saveCache(cache) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
+}
+
+/* ---------- Geocoding ---------- */
+async function geocode(address) {
+  if (!address) return null;
+  const cache = loadCache();
+  const key = normalize(address);
+  if (cache[key]) return cache[key];
+
+  try {
+    const res = await fetch(NOMINATIM_URL + encodeURIComponent(address), {
+      headers: { 'Accept-Language': 'pt-BR' }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.length > 0) {
+      const loc = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+      cache[key] = loc; saveCache(cache);
+      return loc;
+    }
+  } catch (e) { console.warn('Geocode fail:', address, e); }
+  return null;
+}
+
+/* ---------- Parse CSV ---------- */
+function parseRow(row) {
+  const nome = getField(row, ['nome', 'instituicao', 'razao social', 'nome da instituicao']);
+  const endereco = getField(row, ['endereco', 'logradouro', 'rua', 'av']);
+  const cidade = getField(row, ['cidade', 'municipio']);
+  const estado = getField(row, ['estado', 'uf']);
+  const cep = getField(row, ['cep']);
+  const horario = getField(row, ['horario', 'horario de funcionamento', 'funcionamento']);
+  const dias = getField(row, ['dias', 'dias da semana', 'dias de funcionamento']);
+  const programasRaw = getField(row, ['programas', 'programa', 'categoria', 'categorias', 'tipo', 'area']);
+  const programas = programasRaw.split(/[,;|/]/).map(s => s.trim()).filter(Boolean);
+
+  return {
+    nome: nome || 'Instituição sem nome',
+    endereco, cidade, estado, cep, horario, dias, programas,
+    lat: null, lon: null, distance: null
+  };
+}
+
+async function loadCSV() {
+  try {
+    const res = await fetch(CSV_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+    institutions = (parsed.data || []).map(parseRow).filter(i => i.nome && i.nome !== 'Instituição sem nome');
+    if (institutions.length === 0) throw new Error('Nenhuma instituição encontrada no CSV.');
+    renderResults();
+    geocodeAllInBackground();
+  } catch (err) {
+    console.error(err);
+    document.getElementById('results').innerHTML =
+      '<div class="error">Erro ao carregar dados: ' + err.message + '<br>Verifique sua conexão e tente novamente.</div>';
+    document.getElementById('status').textContent = 'Erro ao carregar';
+  }
+}
+
+/* ---------- Background geocoding ---------- */
+async function geocodeAllInBackground() {
+  for (const inst of institutions) {
+    if (inst.lat !== null) continue;
+    const addr = buildAddress(inst);
+    const loc = await geocode(addr);
+    if (loc) { inst.lat = loc.lat; inst.lon = loc.lon; }
+    // pequena pausa para respeitar o Nominatim
+    await new Promise(r => setTimeout(r, 1100));
+  }
+  renderResults();
+}
+
+/* ---------- Filtering ---------- */
+function matchesCategory(inst) {
+  if (activeCategory === 'Todos') return true;
+  return inst.programas.some(p => normalize(p).includes(normalize(activeCategory)));
+}
+function matchesSearch(inst, term) {
+  if (!term) return true;
+  const t = normalize(term);
+  const blob = normalize([
+    inst.nome, inst.endereco, inst.cidade, inst.estado, inst.cep,
+    inst.horario, inst.dias, inst.programas.join(' ')
+  ].join(' '));
+  return blob.includes(t);
+}
+function withinRadius(inst) {
+  if (currentRadius === 0 || !userLocation || inst.distance === null) return true;
+  return inst.distance <= currentRadius;
+}
+
+function getFiltered() {
+  const term = document.getElementById('searchInput').value;
+  let list = institutions.filter(i => matchesCategory(i) && matchesSearch(i, term));
+
+  if (userLocation) {
+    list.forEach(i => {
+      i.distance = (i.lat !== null) ? haversine(userLocation.lat, userLocation.lon, i.lat, i.lon) : null;
+    });
+    list.sort((a, b) => {
+      if (a.distance === null && b.distance === null) return 0;
+      if (a.distance === null) return 1;
+      if (b.distance === null) return -1;
+      return a.distance - b.distance;
+    });
+    list = list.filter(withinRadius);
+  }
+  return list;
+}
+
+/* ---------- Badges ---------- */
+function badgeClass(prog) {
+  const p = normalize(prog);
+  if (p.includes('servico') || p.includes('prestacao de serv')) return 'servicos';
+  if (p.includes('pecuniaria')) return 'pecuniaria';
+  if (p.includes('saude')) return 'saude';
+  if (p.includes('palestr')) return 'palestras';
+  return 'outros';
+}
+
+/* ---------- Render ---------- */
+function renderResults() {
+  const list = getFiltered();
+  const container = document.getElementById('results');
+  document.getElementById('status').textContent = list.length + ' instituições encontradas';
+
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty">Nenhuma instituição encontrada com os filtros atuais.</div>';
+    renderMarkers([]);
+    return;
+  }
+
+  container.innerHTML = list.map((inst, idx) => {
+    const badges = (inst.programas || []).map(p =>
+      `<span class="badge ${badgeClass(p)}">${p}</span>`).join('');
+    const dist = (inst.distance !== null) ?
+      `<div class="dist">📍 ${inst.distance.toFixed(1)} km de distância</div>` : '';
+    return `
+      <div class="card">
+        <h3>${inst.nome}</h3>
+        <div class="meta">
+          ${inst.endereco ? `<span>🏠 ${inst.endereco}</span>` : ''}
+          ${inst.cep ? `<span>📮 ${inst.cep}</span>` : ''}
+          ${inst.horario ? `<span>🕒 ${inst.horario}</span>` : ''}
+          ${inst.dias ? `<span>📅 ${inst.dias}</span>` : ''}
+        </div>
+        <div class="badges">${badges}</div>
+        <a class="map-link" data-idx="${idx}">Ver no Mapa →</a>
+        ${dist}
+      </div>`;
+  }).join('');
+
+  container.querySelectorAll('.map-link').forEach(a => {
+    a.addEventListener('click', () => {
+      const inst = list[parseInt(a.dataset.idx)];
+      if (inst.lat !== null) {
+        map.setView([inst.lat, inst.lon], 15);
+        L.popup().setLatLng([inst.lat, inst.lon])
+          .setContent(`<strong>${inst.nome}</strong><br>${inst.endereco || ''}`)
+          .openOn(map);
+      } else {
+        alert('Localização ainda não geocodificada. Aguarde o carregamento em segundo plano.');
+      }
+    });
+  });
+
+  renderMarkers(list);
+}
+
+function renderMarkers(list) {
+  markersLayer.clearLayers();
+  list.forEach(inst => {
+    if (inst.lat !== null && inst.lon !== null) {
+      const m = L.circleMarker([inst.lat, inst.lon], {
+        radius: 7, color: '#fff', weight: 2, fillColor: '#002147', fillOpacity: 0.95
+      });
+      m.bindPopup(`<strong>${inst.nome}</strong><br>${inst.endereco || ''}<br>${inst.cep || ''}`);
+      m.addTo(markersLayer);
+    }
+  });
+  if (userLocation) {
+    L.circleMarker([userLocation.lat, userLocation.lon], {
+      radius: 8, color: '#fff', weight: 2, fillColor: '#d6336c', fillOpacity: 1
+    }).addTo(markersLayer).bindPopup('Sua localização');
+  }
+}
+
+/* ---------- User location ---------- */
+async function setUserLocationByQuery(query) {
+  const loc = await geocode(query);
+  if (loc) {
+    userLocation = loc;
+    map.setView([loc.lat, loc.lon], 12);
+    renderResults();
+  } else {
+    alert('Não foi possível localizar: ' + query);
+  }
+}
+
+/* ---------- Events ---------- */
+function bindEvents() {
+  document.getElementById('searchInput').addEventListener('input', renderResults);
+  document.getElementById('searchBtn').addEventListener('click', renderResults);
+
+  document.getElementById('locationBtn').addEventListener('click', () => {
+    const v = document.getElementById('locationInput').value.trim();
+    if (v) setUserLocationByQuery(v);
+  });
+  document.getElementById('locationInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('locationBtn').click();
   });
 
   document.getElementById('gpsBtn').addEventListener('click', () => {
-    if (!navigator.geolocation) {
-      alert('Geolocalização não suportada pelo navegador.');
-      return;
-    }
-    setStatus('Obtendo localização GPS...');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        userLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-        document.getElementById('locationInput').value = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
-        setStatus('Localização GPS obtida. Ordenando por distância...');
-        applyFilters();
-      },
-      (err) => { alert('Erro ao obter GPS: ' + err.message); setStatus('Erro ao obter GPS.'); }
-    );
+    if (!navigator.geolocation) { alert('Geolocalização não suportada.'); return; }
+    navigator.geolocation.getCurrentPosition(pos => {
+      userLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      map.setView([userLocation.lat, userLocation.lon], 12);
+      renderResults();
+    }, () => alert('Não foi possível obter sua localização GPS.'));
   });
 
   document.getElementById('clearBtn').addEventListener('click', () => {
     document.getElementById('searchInput').value = '';
     document.getElementById('locationInput').value = '';
-    document.getElementById('radiusSlider').value = 0;
-    document.getElementById('radiusLabel').textContent = 'Sem limite';
-    currentRadius = 0;
     userLocation = null;
-    currentCategory = 'Todos';
-    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-    document.querySelector('.pill.todos').classList.add('active');
-    applyFilters();
+    currentRadius = 0;
+    document.getElementById('radiusRange').value = 0;
+    document.getElementById('radiusValue').textContent = 'Sem limite';
+    activeCategory = 'Todos';
+    document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.cat === 'Todos'));
+    renderResults();
   });
 
-  const slider = document.getElementById('radiusSlider');
-  slider.addEventListener('input', () => {
-    currentRadius = parseInt(slider.value, 10);
-    document.getElementById('radiusLabel').textContent = currentRadius === 0 ? 'Sem limite' : `Raio: ${currentRadius} km`;
-    applyFilters();
+  const radius = document.getElementById('radiusRange');
+  radius.addEventListener('input', () => {
+    currentRadius = parseInt(radius.value);
+    document.getElementById('radiusValue').textContent =
+      currentRadius === 0 ? 'Sem limite' : 'Raio: ' + currentRadius + ' km';
+    renderResults();
   });
 
-  document.querySelectorAll('.pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      currentCategory = pill.dataset.cat;
-      applyFilters();
+  document.querySelectorAll('.pill').forEach(p => {
+    p.addEventListener('click', () => {
+      activeCategory = p.dataset.cat;
+      document.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+      p.classList.add('active');
+      renderResults();
     });
   });
 }
 
-/* ---------- CSV Loading ---------- */
-function loadCSV() {
-  Papa.parse(CSV_URL, {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-    complete: (results) => {
-      try {
-        allInstitutions = results.data.map(normalizeRow).filter(r => r.name);
-        renderResults();
-        // Inicia geocodificação em segundo plano
-        enqueueGeocoding();
-      } catch (e) {
-        showError('Erro ao processar os dados da planilha: ' + e.message);
-      }
-    },
-    error: (err) => {
-      showError('Falha ao carregar a planilha. Verifique sua conexão e tente novamente.<br><small>' + err.message + '</small>');
-    }
-  });
-}
-
-function normalizeRow(row) {
-  const get = (keys) => {
-    for (const k of keys) {
-      if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') return String(row[k]).trim();
-    }
-    return '';
-  };
-
-  const name = get(['Nome', 'nome', 'NOME', 'Instituição', 'Instituicao', 'Razão Social', 'Razao Social']);
-  const address = get(['Endereço', 'Endereco', 'endereco', 'Logradouro']);
-  const cep = get(['CEP', 'cep']);
-  const city = get(['Cidade', 'cidade', 'Município', 'Municipio']);
-  const state = get(['Estado', 'estado', 'UF', 'uf']);
-  const hours = get(['Horário de Funcionamento', 'Horario de Funcionamento', 'Horário', 'Horario', 'Funcionamento']);
-  const programsRaw = get(['Programas', 'Programa', 'Categoria', 'Categorias', 'Tipo', 'Tipos']);
-
-  const programs = programsRaw.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
-
-  const fullAddress = [address, cep, city, state].filter(Boolean).join(', ');
-
-  return {
-    name,
-    address,
-    cep,
-    city,
-    state,
-    hours,
-    programs,
-    fullAddress,
-    lat: null,
-    lon: null,
-    distance: null
-  };
-}
-
-/* ---------- Geocoding ---------- */
-function getCache() {
-  try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; }
-  catch { return {}; }
-}
-function setCache(cache) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
-}
-
-function enqueueGeocoding() {
-  geocodeQueue = allInstitutions.filter(i => !i.lat && !i.lon && i.fullAddress);
-  processGeocodeQueue();
-}
-
-async function processGeocodeQueue() {
-  if (geocodeRunning) return;
-  geocodeRunning = true;
-  const cache = getCache();
-
-  while (geocodeQueue.length > 0) {
-    const inst = geocodeQueue.shift();
-    if (!inst || (inst.lat && inst.lon)) continue;
-
-    const key = inst.fullAddress.toLowerCase();
-    if (cache[key] && cache[key].lat) {
-      inst.lat = cache[key].lat;
-      inst.lon = cache[key].lon;
-      continue;
-    }
-
-    try {
-      const url = `${NOMINATIM_URL}?format=json&limit=1&q=${encodeURIComponent(inst.fullAddress + ', Brasil')}`;
-      const resp = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
-      if (resp.ok) {
-        const data = await resp.json();
-        if (data && data.length > 0) {
-          inst.lat = parseFloat(data[0].lat);
-          inst.lon = parseFloat(data[0].lon);
-          cache[key] = { lat: inst.lat, lon: inst.lon };
-          setCache(cache);
-        }
-      }
-    } catch (e) {
-      // silencioso; tenta próximo
-    }
-    // Respeita limite de uso do Nominatim (1 req/seg)
-    await new Promise(r => setTimeout(r, 1100));
-  }
-
-  geocodeRunning = false;
-  applyFilters();
-  setStatus(`${allInstitutions.length} instituições encontradas`);
-}
-
-async function geocodeUserLocation(query) {
-  setStatus('Buscando localização...');
-  try {
-    const url = `${NOMINATIM_URL}?format=json&limit=1&q=${encodeURIComponent(query + ', Brasil')}`;
-    const resp = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
-    const data = await resp.json();
-    if (data && data.length > 0) {
-      userLocation = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-      setStatus('Localização encontrada. Ordenando por distância...');
-      applyFilters();
-    } else {
-      alert('Localização não encontrada.');
-      setStatus('Localização não encontrada.');
-    }
-  } catch (e) {
-    alert('Erro ao buscar localização: ' + e.message);
-    setStatus('Erro ao buscar localização.');
-  }
-}
-
-/* ---------- Filtering & Sorting ---------- */
-function applyFilters() {
-  const q = document.getElementById('searchInput').value.toLowerCase().trim();
-
-  filteredInstitutions = allInstitutions.filter(inst => {
-    // Categoria
-    if (currentCategory !== 'Todos') {
-      if (!inst.programs.some(p => p.toLowerCase().includes(currentCategory.toLowerCase()))) return false;
-    }
-    // Busca textual
-    if (q) {
-      const blob = [inst.name, inst.address, inst.cep, inst.city, inst.state, inst.hours, inst.programs.join(' ')]
-        .join(' ').toLowerCase();
-      if (!blob.includes(q)) return false;
-    }
-    // Raio
-    if (currentRadius > 0 && userLocation && inst.lat && inst.lon) {
-      const d = haversine(userLocation.lat, userLocation.lon, inst.lat, inst.lon);
-      inst.distance = d;
-      if (d > currentRadius) return false;
-    } else if (currentRadius > 0 && userLocation && (!inst.lat || !inst.lon)) {
-      // Sem coordenadas ainda: não filtra por raio, mantém visível
-    }
-    return true;
-  });
-
-  // Ordenação por distância quando há referência
-  if (userLocation) {
-    filteredInstitutions.forEach(inst => {
-      if (inst.lat && inst.lon) {
-        inst.distance = haversine(userLocation.lat, userLocation.lon, inst.lat, inst.lon);
-      }
-    });
-    filteredInstitutions.sort((a, b) => {
-      if (a.distance == null && b.distance == null) return 0;
-      if (a.distance == null) return 1;
-      if (b.distance == null) return -1;
-      return a.distance - b.distance;
-    });
-  }
-
-  renderResults();
-}
-
-function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return 2 * R * Math.asin(Math.sqrt(a));
-}
-
-/* ---------- Rendering ---------- */
-function renderResults() {
-  const container = document.getElementById('results');
-  if (filteredInstitutions.length === 0) {
-    container.innerHTML = '<div class="loading">Nenhuma instituição encontrada com os filtros atuais.</div>';
-  } else {
-    container.innerHTML = filteredInstitutions.map(inst => cardHTML(inst)).join('');
-    container.querySelectorAll('.map-link').forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const idx = parseInt(link.dataset.idx, 10);
-        const inst = filteredInstitutions[idx];
-        if (inst && inst.lat && inst.lon) {
-          map.setView([inst.lat, inst.lon], 15);
-          L.popup().setLatLng([inst.lat, inst.lon]).setContent(`<b>${inst.name}</b>`).openOn(map);
-        } else {
-          alert('Coordenadas ainda não disponíveis para esta instituição. Aguarde a geocodificação.');
-        }
-      });
-    });
-  }
-  renderMarkers();
-  setStatus(`${filteredInstitutions.length} instituições encontradas`);
-}
-
-function cardHTML(inst) {
-  const idx = filteredInstitutions.indexOf(inst);
-  const badges = inst.programs.map(p => {
-    const cls = badgeClass(p);
-    return `<span class="badge ${cls}">${escapeHtml(p)}</span>`;
-  }).join('');
-
-  const dist = (inst.distance != null) ? `<div class="distance">📍 ${inst.distance.toFixed(1)} km de distância</div>` : '';
-
-  return `
-    <div class="card">
-      <div class="name">${escapeHtml(inst.name)}</div>
-      <div class="meta">
-        ${inst.address ? `<div class="row"><span class="ico">🏠</span><span>${escapeHtml(inst.address)}</span></div>` : ''}
-        ${inst.cep ? `<div class="row"><span class="ico">📮</span><span>CEP: ${escapeHtml(inst.cep)}</span></div>` : ''}
-        ${inst.hours ? `<div class="row"><span class="ico">🕒</span><span>${escapeHtml(inst.hours)}</span></div>` : ''}
-      </div>
-      ${badges ? `<div class="badges">${badges}</div>` : ''}
-      ${dist}
-      <a class="map-link" data-idx="${idx}">Ver no Mapa 🗺️</a>
-    </div>`;
-}
-
-function badgeClass(program) {
-  const p = program.toLowerCase();
-  if (p.includes('serviç') || p.includes('servic')) return 'servicos';
-  if (p.includes('pecuni')) return 'pecuniaria';
-  if (p.includes('saúde') || p.includes('saude') || p.includes('health')) return 'saude';
-  if (p.includes('palestr') || p.includes('lecture')) return 'palestras';
-  return 'outros';
-}
-
-function renderMarkers() {
-  markersLayer.clearLayers();
-  filteredInstitutions.forEach(inst => {
-    if (inst.lat && inst.lon) {
-      const m = L.circleMarker([inst.lat, inst.lon], {
-        radius: 7,
-        color: '#fff',
-        weight: 2,
-        fillColor: '#002147',
-        fillOpacity: 0.9
-      });
-      m.bindPopup(`<b>${escapeHtml(inst.name)}</b><br>${escapeHtml(inst.address || '')}`);
-      m.addTo(markersLayer);
-    }
-  });
-
-  if (userLocation) {
-    L.circleMarker([userLocation.lat, userLocation.lon], {
-      radius: 9,
-      color: '#fff',
-      weight: 2,
-      fillColor: '#e91e63',
-      fillOpacity: 0.9
-    }).bindPopup('Sua localização').addTo(markersLayer);
-  }
-}
-
-/* ---------- Utils ---------- */
-function setStatus(msg) {
-  document.getElementById('status').textContent = msg;
-}
-function showError(msg) {
-  document.getElementById('results').innerHTML = `<div class="error">⚠️ ${msg}</div>`;
-  setStatus('Erro ao carregar dados');
-}
-function escapeHtml(str) {
-  if (str == null) return '';
-  return String(str)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-window.addEventListener('DOMContentLoaded', init);
+/* ---------- Init ---------- */
+window.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  bindEvents();
+  loadCSV();
+});
 </script>
 </body>
 </html>
