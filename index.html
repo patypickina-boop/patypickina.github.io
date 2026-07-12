@@ -5,677 +5,592 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Localizador de Parceiros Sema MPDFT</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
-body { background: #f4f6f9; color: #1a2a44; }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+  html, body { height: 100%; overflow: hidden; }
 
-/* Header */
-.header {
-  background: linear-gradient(135deg, #0d1b3d 0%, #16356b 100%);
-  color: #fff;
-  padding: 18px 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
-}
-.header .handshake { font-size: 34px; }
-.header h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.3px; }
-.header p { font-size: 13px; opacity: 0.85; }
-.header .status-pill {
-  margin-left: auto;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.25);
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.status-dot { width: 10px; height: 10px; border-radius: 50%; background: #f6c560; }
-.status-dot.ok { background: #4ade80; }
-.status-dot.err { background: #f87171; }
-.status-dot.loading { background: #60a5fa; animation: pulse 1s infinite; }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  body { display: flex; flex-direction: column; }
 
-/* Layout */
-.container { display: flex; height: calc(100vh - 78px); }
-.sidebar {
-  width: 340px;
-  background: #fff;
-  border-right: 1px solid #e1e6ef;
-  padding: 16px;
-  overflow-y: auto;
-}
-.map-area { flex: 1; position: relative; }
-#map { width: 100%; height: 100%; }
+  /* Header */
+  header {
+    background: #002147;
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    z-index: 1000;
+  }
+  header .handshake {
+    font-size: 34px;
+    color: #fff;
+    background: rgba(255,255,255,0.12);
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  header h1 { font-size: 22px; font-weight: 700; line-height: 1.1; }
+  header p { font-size: 13px; opacity: 0.85; margin-top: 2px; }
 
-/* Sidebar sections */
-.section { margin-bottom: 18px; }
-.section h2 {
-  font-size: 14px;
-  color: #0d1b3d;
-  margin-bottom: 10px;
-  border-bottom: 2px solid #16356b;
-  padding-bottom: 6px;
-}
-.search-box {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #cdd5e3;
-  border-radius: 8px;
-  font-size: 14px;
-}
-.search-box:focus { outline: none; border-color: #16356b; box-shadow: 0 0 0 3px rgba(22,53,107,0.15); }
+  /* Layout */
+  .app { flex: 1; display: flex; overflow: hidden; }
 
-.filter-group { display: flex; flex-direction: column; gap: 8px; }
-.filter-group label {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px; cursor: pointer; padding: 6px 8px;
-  border-radius: 6px; transition: background 0.15s;
-}
-.filter-group label:hover { background: #f0f3f9; }
-.filter-group input[type=checkbox] { accent-color: #16356b; }
+  /* Sidebar */
+  .sidebar {
+    width: 420px;
+    min-width: 420px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #e0e0e0;
+    overflow: hidden;
+  }
+  .filters {
+    padding: 16px 18px;
+    border-bottom: 1px solid #eee;
+    overflow-y: auto;
+  }
+  .filters-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 16px; font-weight: 700; color: #002147;
+    margin-bottom: 14px;
+  }
+  .filters-title i { color: #002147; }
 
-.btn {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-primary { background: #16356b; color: #fff; }
-.btn-primary:hover { background: #0d1b3d; }
-.btn-secondary { background: #eef2f8; color: #16356b; margin-top: 8px; }
-.btn-secondary:hover { background: #dde4f0; }
+  .search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .search-row input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+  }
+  .search-row input:focus { border-color: #002147; }
+  .btn {
+    border: none; cursor: pointer; border-radius: 6px;
+    padding: 10px 14px; font-size: 13px; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: opacity .15s, transform .05s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-blue { background: #002147; color: #fff; }
+  .btn-pink { background: #d81b60; color: #fff; }
+  .btn-gray { background: #e0e0e0; color: #333; }
+  .btn-light { background: #f0f0f0; color: #002147; border: 1px solid #ddd; }
 
-.gps-info {
-  font-size: 12px; color: #556;
-  background: #f0f3f9;
-  padding: 8px 10px;
-  border-radius: 6px;
-  margin-top: 8px;
-}
+  .cep-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .cep-row input { flex: 1; padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; outline: none; }
+  .cep-row input:focus { border-color: #d81b60; }
 
-/* Loading overlay */
-.loading-overlay {
-  position: absolute; inset: 0;
-  background: rgba(255,255,255,0.92);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  z-index: 1000;
-  gap: 14px;
-}
-.spinner {
-  width: 48px; height: 48px;
-  border: 5px solid #dde4f0;
-  border-top-color: #16356b;
-  border-radius: 50%;
-  animation: spin 0.9s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading-text { font-size: 15px; color: #16356b; font-weight: 500; }
-.loading-sub { font-size: 12px; color: #678; }
+  .btn-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .btn-row .btn { flex: 1; }
 
-/* Error banner */
-.error-banner {
-  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-  background: #fef2f2; border: 1px solid #f87171; color: #b91c1c;
-  padding: 10px 16px; border-radius: 8px; font-size: 13px;
-  z-index: 999; max-width: 90%; display: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-.error-banner.show { display: block; }
+  .radius-block { margin-bottom: 14px; }
+  .radius-label { font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .radius-label span { color: #002147; font-weight: 700; }
+  input[type=range] { width: 100%; accent-color: #002147; }
 
-/* Info banner */
-.info-banner {
-  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-  background: #eff6ff; border: 1px solid #60a5fa; color: #1e40af;
-  padding: 10px 16px; border-radius: 8px; font-size: 13px;
-  z-index: 999; max-width: 90%; display: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-.info-banner.show { display: block; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  .pill {
+    border: none; cursor: pointer; padding: 7px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; color: #fff; opacity: 0.55;
+    transition: opacity .15s;
+  }
+  .pill.active { opacity: 1; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+  .pill-all { background: #6b7280; }
+  .pill-servicos { background: #002147; }
+  .pill-pecuniaria { background: #2e7d32; }
+  .pill-saude { background: #c62828; }
+  .pill-palestras { background: #6a1b9a; }
 
-/* Cards list */
-.cards-list { display: flex; flex-direction: column; gap: 10px; }
-.card {
-  background: #fff; border: 1px solid #e1e6ef; border-radius: 10px;
-  padding: 12px; cursor: pointer; transition: all 0.2s;
-}
-.card:hover { border-color: #16356b; box-shadow: 0 4px 12px rgba(22,53,107,0.12); transform: translateY(-1px); }
-.card h3 { font-size: 14px; color: #0d1b3d; margin-bottom: 4px; }
-.card .meta { font-size: 12px; color: #678; margin-bottom: 8px; }
-.badge {
-  display: inline-block; padding: 3px 8px; border-radius: 12px;
-  font-size: 11px; font-weight: 500; margin-right: 4px;
-}
-.badge-creas { background: #dbeafe; color: #1e40af; }
-.badge-cras { background: #dcfce7; color: #166534; }
-.badge-ong { background: #fef3c7; color: #92400e; }
-.badge-defensoria { background: #fce7f3; color: #9d174d; }
-.badge-outro { background: #e5e7eb; color: #374151; }
+  /* Results */
+  .results {
+    flex: 1; overflow-y: auto; padding: 12px 18px;
+  }
+  .results-title {
+    font-size: 13px; color: #666; margin-bottom: 10px; font-weight: 600;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: box-shadow .15s;
+  }
+  .card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
+  .card-name { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 6px; }
+  .card-line { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: #444; margin-bottom: 4px; }
+  .card-line i { color: #d81b60; margin-top: 2px; width: 14px; text-align: center; }
+  .card-line.clock i { color: #002147; }
+  .card-distance { font-size: 12px; color: #002147; font-weight: 600; margin-bottom: 6px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 8px; }
+  .badge {
+    font-size: 10.5px; padding: 3px 8px; border-radius: 12px; color: #fff; font-weight: 600;
+  }
+  .badge-servicos { background: #002147; }
+  .badge-pecuniaria { background: #2e7d32; }
+  .badge-saude { background: #c62828; }
+  .badge-palestras { background: #6a1b9a; }
+  .badge-other { background: #555; }
+  .card-link { color: #002147; font-size: 12.5px; font-weight: 600; text-decoration: none; cursor: pointer; }
+  .card-link:hover { text-decoration: underline; }
 
-.count-info { font-size: 12px; color: #678; margin-bottom: 10px; }
+  .status-bar {
+    background: #002147; color: #fff; padding: 10px 18px;
+    font-size: 13px; font-weight: 600; text-align: center;
+  }
 
-/* Leaflet popup */
-.leaflet-popup-content h4 { color: #0d1b3d; margin-bottom: 4px; }
-.leaflet-popup-content p { font-size: 12px; color: #556; margin: 2px 0; }
+  /* Map */
+  #map { flex: 1; height: 100%; }
+
+  .loading { text-align: center; padding: 30px 10px; color: #888; font-size: 13px; }
+  .spinner {
+    border: 3px solid #eee; border-top: 3px solid #002147;
+    border-radius: 50%; width: 28px; height: 28px;
+    animation: spin 1s linear infinite; margin: 0 auto 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .leaflet-popup-content h4 { color: #002147; margin-bottom: 4px; }
+  .leaflet-popup-content p { font-size: 12px; color: #444; margin: 2px 0; }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="handshake">🤝</div>
+<header>
+  <div class="handshake"><i class="fa-solid fa-handshake"></i></div>
   <div>
     <h1>Localizador de Parceiros Sema MPDFT</h1>
-    <p>Serviço de Mediação e Conciliação - Ministério Público do Distrito Federal e Territórios</p>
+    <p>Encontre instituições parceiras</p>
   </div>
-  <div class="status-pill">
-    <span id="statusDot" class="status-dot loading"></span>
-    <span id="statusText">Conectando...</span>
-  </div>
-</div>
+</header>
 
-<div class="container">
+<div class="app">
   <aside class="sidebar">
-    <div class="section">
-      <h2>🔍 Buscar Instituição</h2>
-      <input type="text" id="searchInput" class="search-box" placeholder="Nome, endereço ou serviço...">
-    </div>
+    <div class="filters">
+      <div class="filters-title"><i class="fa-solid fa-filter"></i> Filtros</div>
 
-    <div class="section">
-      <h2>🏷️ Tipo de Parceiro</h2>
-      <div class="filter-group" id="typeFilters">
-        <label><input type="checkbox" value="CREAS" checked> CREAS</label>
-        <label><input type="checkbox" value="CRAS" checked> CRAS</label>
-        <label><input type="checkbox" value="ONG" checked> ONG / Associação</label>
-        <label><input type="checkbox" value="Defensoria" checked> Defensoria</label>
-        <label><input type="checkbox" value="Outro" checked> Outros</label>
+      <div class="search-row">
+        <input type="text" id="searchInput" placeholder="Buscar por nome, endereço, programa...">
+        <button class="btn btn-blue" id="searchBtn" title="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
+      </div>
+
+      <div class="cep-row">
+        <input type="text" id="cepInput" placeholder="72426-075">
+        <button class="btn btn-pink" id="cepBtn">Buscar Localização</button>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-light" id="gpsBtn"><i class="fa-solid fa-location-crosshairs"></i> GPS</button>
+        <button class="btn btn-light" id="clearBtn"><i class="fa-solid fa-eraser"></i> Limpar</button>
+      </div>
+
+      <div class="radius-block">
+        <div class="radius-label">Raio: <span id="radiusValue">Sem limite</span></div>
+        <input type="range" id="radiusSlider" min="0" max="100" value="0" step="1">
+      </div>
+
+      <div class="pills">
+        <button class="pill pill-all active" data-cat="Todos">Todos</button>
+        <button class="pill pill-servicos" data-cat="Prestação de Serviços">Prestação de Serviços</button>
+        <button class="pill pill-pecuniaria" data-cat="Prestação Pecuniária">Prestação Pecuniária</button>
+        <button class="pill pill-saude" data-cat="Programa de Saúde">Programa de Saúde</button>
+        <button class="pill pill-palestras" data-cat="Palestras">Palestras</button>
       </div>
     </div>
 
-    <div class="section">
-      <h2>📍 Minha Localização</h2>
-      <button class="btn btn-primary" id="gpsBtn">📍 Usar GPS / Localização</button>
-      <div class="gps-info" id="gpsInfo">Clique para detectar sua localização.</div>
+    <div class="results" id="results">
+      <div class="loading"><div class="spinner"></div>Carregando instituições...</div>
     </div>
 
-    <div class="section">
-      <h2>🔄 Fonte de Dados</h2>
-      <button class="btn btn-secondary" id="reloadBtn">↻ Recarregar Dados da Planilha</button>
-      <div class="gps-info" id="dataSourceInfo">Tentando carregar planilha...</div>
-    </div>
-
-    <div class="section">
-      <h2>📋 Instituições (<span id="countNum">0</span>)</h2>
-      <div class="count-info" id="countInfo"></div>
-      <div class="cards-list" id="cardsList"></div>
-    </div>
+    <div class="status-bar" id="statusBar">0 instituições encontradas</div>
   </aside>
 
-  <div class="map-area">
-    <div id="map"></div>
-    <div class="loading-overlay" id="loadingOverlay">
-      <div class="spinner"></div>
-      <div class="loading-text" id="loadingText">Carregando dados da planilha...</div>
-      <div class="loading-sub" id="loadingSub">Conectando ao Google Sheets</div>
-    </div>
-    <div class="error-banner" id="errorBanner"></div>
-    <div class="info-banner" id="infoBanner"></div>
-  </div>
+  <div id="map"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ============================================================
-// Configuração
-// ============================================================
-const SHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
-const SHEET_GID = '0';
-const EXPECTED_COLUMNS = ['nome', 'tipo', 'endereco', 'latitude', 'longitude', 'telefone', 'servicos'];
-const MAX_RETRIES = 3;
+const CSV_URL = "https://docs.google.com/spreadsheets/d/179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw/export?format=csv";
+const CACHE_KEY = "sema_mpdft_geocode_v17";
 
-// ============================================================
-// Estado global
-// ============================================================
-let allData = [];
-let map = null;
-let markersLayer = null;
-let userMarker = null;
-let dataSource = 'nenhum';
+const CATEGORIES = {
+  "Prestação de Serviços": { cls: "badge-servicos", pill: "pill-servicos" },
+  "Prestação Pecuniária": { cls: "badge-pecuniaria", pill: "pill-pecuniaria" },
+  "Programa de Saúde": { cls: "badge-saude", pill: "pill-saude" },
+  "Palestras": { cls: "badge-palestras", pill: "pill-palestras" }
+};
 
-// ============================================================
-// Utilitários de UI
-// ============================================================
-function setStatus(state, text) {
-  const dot = document.getElementById('statusDot');
-  const txt = document.getElementById('statusText');
-  dot.className = 'status-dot ' + state;
-  txt.textContent = text;
-}
+let allInstitutions = [];
+let map, markersLayer;
+let referencePoint = null; // {lat, lon, label}
+let activeCategory = "Todos";
+let radiusKm = 0; // 0 = sem limite
 
-function setLoading(visible, text, sub) {
-  const overlay = document.getElementById('loadingOverlay');
-  overlay.style.display = visible ? 'flex' : 'none';
-  if (text) document.getElementById('loadingText').textContent = text;
-  if (sub) document.getElementById('loadingSub').textContent = sub;
-}
+const searchInput = document.getElementById("searchInput");
+const cepInput = document.getElementById("cepInput");
+const radiusSlider = document.getElementById("radiusSlider");
+const radiusValue = document.getElementById("radiusValue");
+const resultsEl = document.getElementById("results");
+const statusBar = document.getElementById("statusBar");
 
-function showError(msg) {
-  const banner = document.getElementById('errorBanner');
-  banner.textContent = msg;
-  banner.classList.add('show');
-  setTimeout(() => banner.classList.remove('show'), 8000);
-}
-
-function showInfo(msg) {
-  const banner = document.getElementById('infoBanner');
-  banner.textContent = msg;
-  banner.classList.add('show');
-  setTimeout(() => banner.classList.remove('show'), 6000);
-}
-
-function setDataSourceInfo(msg) {
-  document.getElementById('dataSourceInfo').textContent = msg;
-}
-
-function log(...args) {
-  console.log('%c[Sema MPDFT]', 'color:#16356b;font-weight:bold;', ...args);
-}
-
-function logErr(...args) {
-  console.error('%c[Sema MPDFT ERRO]', 'color:#b91c1c;font-weight:bold;', ...args);
-}
-
-// ============================================================
-// Dados de exemplo (fallback)
-// ============================================================
-const SAMPLE_DATA = [
-  { nome: 'CREAS Plano Piloto', tipo: 'CREAS', endereco: 'Setor de Administração Federal, Brasília - DF', latitude: -15.7939, longitude: -47.8828, telefone: '(61) 3224-0000', servicos: 'Mediação, Conciliação, Atendimento Psicossocial' },
-  { nome: 'CRAS Asa Norte', tipo: 'CRAS', endereco: 'SQN 315, Brasília - DF', latitude: -15.7622, longitude: -47.8700, telefone: '(61) 3273-1111', servicos: 'Assistência Social, Mediação Comunitária' },
-  { nome: 'ONG Paz e Cidadania', tipo: 'ONG', endereco: 'Taguatinga Norte, Brasília - DF', latitude: -15.8350, longitude: -48.0600, telefone: '(61) 3561-2222', servicos: 'Mediação de Conflitos, Cidadania' },
-  { nome: 'Defensoria Pública do DF', tipo: 'Defensoria', endereco: 'Eixo Monumental, Brasília - DF', latitude: -15.7810, longitude: -47.9150, telefone: '(61) 3217-3333', servicos: 'Defensoria, Conciliação' },
-  { nome: 'CRAS Gama', tipo: 'CRAS', endereco: 'Gama Sul, Brasília - DF', latitude: -16.0200, longitude: -48.0700, telefone: '(61) 3556-4444', servicos: 'Assistência Social' },
-  { nome: 'CREAS Ceilândia', tipo: 'CREAS', endereco: 'Ceilândia Centro, Brasília - DF', latitude: -15.8200, longitude: -48.1000, telefone: '(61) 3371-5555', servicos: 'Mediação, Atendimento Especializado' },
-  { nome: 'Associação Comunitária Águas Claras', tipo: 'ONG', endereco: 'Águas Claras, Brasília - DF', latitude: -15.8400, longitude: -48.0250, telefone: '(61) 3585-6666', servicos: 'Mediação Comunitária' }
-];
-
-// ============================================================
-// Estratégias de carregamento
-// ============================================================
-
-// Estratégia 1: Google Visualization API (gviz)
-function loadViaGviz() {
-  return new Promise((resolve, reject) => {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&tq&gid=${SHEET_GID}`;
-    log('Tentando gviz:', url);
-    const script = document.createElement('script');
-    let done = false;
-    const timeout = setTimeout(() => {
-      if (done) return;
-      done = true;
-      script.remove();
-      reject(new Error('Timeout gviz'));
-    }, 12000);
-    window._semaGvizCallback = function() { /* gviz não usa callback global */ };
-    fetch(url)
-      .then(r => {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.text();
-      })
-      .then(text => {
-        clearTimeout(timeout);
-        if (done) return;
-        done = true;
-        const rows = parseGvizText(text);
-        if (!rows || rows.length === 0) throw new Error('gviz retornou 0 linhas');
-        resolve(rows);
-      })
-      .catch(err => {
-        clearTimeout(timeout);
-        if (done) return;
-        done = true;
-        reject(err);
-      });
-  });
-}
-
-function parseGvizText(text) {
-  // gviz retorna algo como: /*O_o*/ google.visualization.Query.setResponse({...});
-  const jsonStart = text.indexOf('{');
-  const jsonEnd = text.lastIndexOf('}');
-  if (jsonStart < 0 || jsonEnd < 0) throw new Error('Formato gviz inválido');
-  const jsonStr = text.substring(jsonStart, jsonEnd + 1);
-  const data = JSON.parse(jsonStr);
-  if (!data.table || !data.table.rows) return [];
-  const cols = data.table.cols.map(c => (c.label || c.id || '').toLowerCase().trim());
-  const rows = data.table.rows.map(r => {
-    const obj = {};
-    (r.c || []).forEach((cell, i) => {
-      const key = cols[i] || ('col' + i);
-      obj[key] = cell ? (cell.v !== null && cell.v !== undefined ? String(cell.v) : '') : '';
-    });
-    return obj;
-  });
-  return rows;
-}
-
-// Estratégia 2: CSV export
-async function loadViaCSV() {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
-  log('Tentando CSV export:', url);
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('CSV HTTP ' + res.status);
-  const text = await res.text();
-  if (!text || text.trim().length === 0) throw new Error('CSV vazio');
-  const rows = parseCSV(text);
-  if (rows.length === 0) throw new Error('CSV retornou 0 linhas');
-  return rows;
-}
-
-function parseCSV(text) {
-  const lines = text.replace(/\r\n/g, '\n').split('\n').filter(l => l.trim().length > 0);
-  if (lines.length < 2) return [];
-  const headers = splitCSVLine(lines[0]).map(h => h.toLowerCase().trim());
-  const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const values = splitCSVLine(lines[i]);
-    const obj = {};
-    headers.forEach((h, idx) => { obj[h] = (values[idx] || '').trim(); });
-    rows.push(obj);
-  }
-  return rows;
-}
-
-function splitCSVLine(line) {
-  const result = [];
-  let cur = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
-      else inQuotes = !inQuotes;
-    } else if (ch === ',' && !inQuotes) {
-      result.push(cur); cur = '';
-    } else {
-      cur += ch;
-    }
-  }
-  result.push(cur);
-  return result;
-}
-
-// Estratégia 3: JSON direto (publicação web)
-async function loadViaJSON() {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}`;
-  log('Tentando JSON direto (fetch):', url);
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('JSON HTTP ' + res.status);
-  const text = await res.text();
-  const rows = parseGvizText(text);
-  if (rows.length === 0) throw new Error('JSON retornou 0 linhas');
-  return rows;
-}
-
-// ============================================================
-// Validação de dados
-// ============================================================
-function normalizeRow(row) {
-  // Tenta mapear variações de nomes de colunas
-  const map = {};
-  Object.keys(row).forEach(k => { map[k.toLowerCase().trim()] = row[k]; });
-  const get = (...keys) => {
-    for (const k of keys) if (map[k] !== undefined && map[k] !== '') return map[k];
-    return '';
-  };
-  const lat = parseFloat(get('latitude', 'lat', 'latitud', 'y'));
-  const lng = parseFloat(get('longitude', 'lng', 'lon', 'longitud', 'x'));
-  return {
-    nome: get('nome', 'name', 'instituicao', 'instituição'),
-    tipo: classifyType(get('tipo', 'type', 'categoria', 'category')),
-    endereco: get('endereco', 'endereço', 'address', 'local'),
-    latitude: lat,
-    longitude: lng,
-    telefone: get('telefone', 'phone', 'tel', 'contato'),
-    servicos: get('servicos', 'serviços', 'services', 'descricao', 'descrição')
-  };
-}
-
-function classifyType(t) {
-  const s = (t || '').toUpperCase();
-  if (s.includes('CREAS')) return 'CREAS';
-  if (s.includes('CRAS')) return 'CRAS';
-  if (s.includes('ONG') || s.includes('ASSOC')) return 'ONG';
-  if (s.includes('DEFENSOR') || s.includes('DEFESA')) return 'Defensoria';
-  return 'Outro';
-}
-
-function validateData(rows) {
-  if (!Array.isArray(rows)) throw new Error('Dados retornados não são uma lista');
-  if (rows.length === 0) throw new Error('Planilha retornou 0 linhas');
-  log('Linhas brutas recebidas:', rows.length);
-  log('Colunas disponíveis:', Object.keys(rows[0]));
-  // Verifica se há ao menos nome e coordenadas (após normalização)
-  const normalized = rows.map(normalizeRow).filter(r => r.nome && !isNaN(r.latitude) && !isNaN(r.longitude));
-  log('Linhas válidas com coordenadas:', normalized.length);
-  if (normalized.length === 0) {
-    throw new Error('Nenhuma linha com nome + latitude + longitude válidos');
-  }
-  // Aviso se colunas esperadas não foram encontradas
-  const firstKeys = Object.keys(rows[0]).map(k => k.toLowerCase());
-  const missing = EXPECTED_COLUMNS.filter(c => !firstKeys.some(k => k.includes(c) || c.includes(k)));
-  if (missing.length > 0) {
-    log('Aviso: colunas esperadas não encontradas exatamente:', missing);
-  }
-  return normalized;
-}
-
-// ============================================================
-// Carregamento com retry e backoff exponencial
-// ============================================================
-async function loadWithRetry() {
-  const strategies = [
-    { name: 'gviz', fn: loadViaGviz },
-    { name: 'CSV export', fn: loadViaCSV },
-    { name: 'JSON direto', fn: loadViaJSON }
-  ];
-  let lastError = null;
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    for (const strat of strategies) {
-      try {
-        setLoading(true, `Tentativa ${attempt+1}/${MAX_RETRIES}: ${strat.name}`, 'Conectando ao Google Sheets...');
-        setDataSourceInfo(`Tentativa ${attempt+1}: ${strat.name}...`);
-        log(`Tentativa ${attempt+1} - estratégia: ${strat.name}`);
-        const raw = await strat.fn();
-        const valid = validateData(raw);
-        log(`Sucesso com ${strat.name}: ${valid.length} registros válidos`);
-        return { data: valid, source: strat.name };
-      } catch (err) {
-        logErr(`Falha em ${strat.name} (tentativa ${attempt+1}):`, err.message);
-        lastError = err;
-      }
-    }
-    if (attempt < MAX_RETRIES - 1) {
-      const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
-      log(`Aguardando ${delay}ms antes de tentar novamente...`);
-      setLoading(true, `Reconectando em ${delay/1000}s...`, 'Backoff exponencial');
-      await new Promise(r => setTimeout(r, delay));
-    }
-  }
-  throw lastError || new Error('Todas as estratégias falharam');
-}
-
-// ============================================================
-// Inicialização do mapa
-// ============================================================
 function initMap() {
-  map = L.map('map').setView([-15.7939, -47.8828], 11);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap',
+  map = L.map("map").setView([-15.7801, -47.9292], 11);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap",
     maxZoom: 19
   }).addTo(map);
   markersLayer = L.layerGroup().addTo(map);
 }
 
-// ============================================================
-// Renderização
-// ============================================================
-function badgeClass(tipo) {
-  return {
-    'CREAS': 'badge-creas',
-    'CRAS': 'badge-cras',
-    'ONG': 'badge-ong',
-    'Defensoria': 'badge-defensoria'
-  }[tipo] || 'badge-outro';
+function getCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || "{}"); }
+  catch { return {}; }
+}
+function setCacheEntry(key, value) {
+  const c = getCache();
+  c[key] = value;
+  localStorage.setItem(CACHE_KEY, JSON.stringify(c));
 }
 
-function getActiveTypes() {
-  return Array.from(document.querySelectorAll('#typeFilters input:checked')).map(i => i.value);
+function csvToArray(text) {
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i], next = text[i+1];
+    if (ch === '"' && inQuotes && next === '"') { field += '"'; i++; }
+    else if (ch === '"') { inQuotes = !inQuotes; }
+    else if (ch === '\n' && !inQuotes) { row.push(field); rows.push(row); row = []; field = ""; }
+    else if (ch === '\r' && !inQuotes) { /* skip */ }
+    else if (ch === ',' && !inQuotes) { row.push(field); field = ""; }
+    else { field += ch; }
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows;
 }
 
-function getSearchTerm() {
-  return document.getElementById('searchInput').value.toLowerCase().trim();
+function normalizeHeader(h) {
+  return (h || "").trim().toLowerCase().replace(/[\u0300-\u036f]/g, "");
 }
 
-function filterData() {
-  const types = getActiveTypes();
-  const term = getSearchTerm();
-  return allData.filter(d => {
-    if (!types.includes(d.tipo)) return false;
-    if (!term) return true;
-    return (d.nome + ' ' + d.endereco + ' ' + d.servicos + ' ' + d.tipo).toLowerCase().includes(term);
+function pickField(obj, candidates) {
+  for (const c of candidates) {
+    const key = Object.keys(obj).find(k => normalizeHeader(k) === normalizeHeader(c));
+    if (key && obj[key] && String(obj[key]).trim()) return String(obj[key]).trim();
+  }
+  return "";
+}
+
+function detectCategories(row) {
+  const found = new Set();
+  const allText = Object.values(row).join(" ").toLowerCase();
+  if (allText.includes("prestação de serviços") || allText.includes("prestacao de servicos")) found.add("Prestação de Serviços");
+  if (allText.includes("prestação pecuniária") || allText.includes("prestacao pecuniaria")) found.add("Prestação Pecuniária");
+  if (allText.includes("programa de saúde") || allText.includes("programa de saude")) found.add("Programa de Saúde");
+  if (allText.includes("palestras") || allText.includes("palestra")) found.add("Palestras");
+  if (found.size === 0) {
+    // tenta coluna de programa
+    const prog = pickField(row, ["programa", "categoria", "tipo", "area"]);
+    if (prog) found.add(prog);
+  }
+  return Array.from(found);
+}
+
+async function loadCSV() {
+  try {
+    const res = await fetch(CSV_URL);
+    let text = await res.text();
+    // BOM removal
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    const rows = csvToArray(text);
+    if (rows.length < 2) { resultsEl.innerHTML = "<div class='loading'>Nenhum dado encontrado.</div>"; return; }
+    const headers = rows[0];
+    const data = [];
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i].length === 1 && !rows[i][0].trim()) continue;
+      const obj = {};
+      headers.forEach((h, idx) => obj[h] = (rows[i][idx] || "").trim());
+      const nome = pickField(obj, ["nome", "instituicao", "razao social", "parceiro", "orgao", "entidade"]);
+      if (!nome) continue;
+      const endereco = pickField(obj, ["endereco", "rua", "logradouro", "local"]);
+      const cep = pickField(obj, ["cep", "codigo postal"]);
+      const horario = pickField(obj, ["horario", "horario de funcionamento", "funcionamento", "horários"]);
+      const bairro = pickField(obj, ["bairro", "regiao"]);
+      const cidade = pickField(obj, ["cidade", "municipio"]);
+      const uf = pickField(obj, ["uf", "estado"]);
+      const cats = detectCategories(obj);
+      data.push({
+        nome, endereco, cep, horario, bairro, cidade, uf,
+        categorias: cats,
+        lat: null, lon: null,
+        geocoding: false, geocoded: false,
+        distance: null,
+        raw: obj
+      });
+    }
+    allInstitutions = data;
+    renderResults();
+    geocodeInBackground();
+  } catch (e) {
+    console.error(e);
+    resultsEl.innerHTML = "<div class='loading'>Erro ao carregar dados.<br><small>" + e.message + "</small></div>";
+  }
+}
+
+function buildAddressQuery(inst) {
+  const parts = [inst.endereco, inst.bairro, inst.cidade || "Brasília", inst.uf || "DF", inst.cep, "Brasil"]
+    .filter(p => p && p.trim());
+  return parts.join(", ");
+}
+
+async function geocodeOne(inst) {
+  const q = buildAddressQuery(inst);
+  const cacheKey = q.toLowerCase();
+  const cache = getCache();
+  if (cache[cacheKey]) {
+    inst.lat = cache[cacheKey].lat;
+    inst.lon = cache[cacheKey].lon;
+    inst.geocoded = true;
+    return;
+  }
+  inst.geocoding = true;
+  try {
+    const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(q);
+    const res = await fetch(url, { headers: { "Accept-Language": "pt-BR" } });
+    const data = await res.json();
+    if (data && data.length > 0) {
+      inst.lat = parseFloat(data[0].lat);
+      inst.lon = parseFloat(data[0].lon);
+      inst.geocoded = true;
+      setCacheEntry(cacheKey, { lat: inst.lat, lon: inst.lon });
+    }
+  } catch (e) {
+    console.warn("Geocode fail:", inst.nome, e);
+  } finally {
+    inst.geocoding = false;
+  }
+}
+
+async function geocodeInBackground() {
+  for (const inst of allInstitutions) {
+    if (!inst.geocoded && !inst.geocoding) {
+      await geocodeOne(inst);
+      // Atualiza distâncias se houver referência
+      if (referencePoint && inst.lat != null) {
+        inst.distance = haversine(referencePoint.lat, referencePoint.lon, inst.lat, inst.lon);
+      }
+      renderResults();
+      updateMarkers();
+      // Respeita rate limit do Nominatim (1 req/seg)
+      await new Promise(r => setTimeout(r, 1100));
+    }
+  }
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+function getFiltered() {
+  const q = searchInput.value.trim().toLowerCase();
+  let list = allInstitutions.filter(inst => {
+    if (activeCategory !== "Todos") {
+      if (!inst.categorias.includes(activeCategory)) return false;
+    }
+    if (q) {
+      const blob = (inst.nome + " " + inst.endereco + " " + inst.cep + " " + inst.bairro + " " + inst.cidade + " " + inst.categorias.join(" ")).toLowerCase();
+      if (!blob.includes(q)) return false;
+    }
+    if (radiusKm > 0 && referencePoint) {
+      if (inst.distance == null) return false;
+      if (inst.distance > radiusKm) return false;
+    }
+    return true;
   });
-}
 
-function render() {
-  const filtered = filterData();
-  document.getElementById('countNum').textContent = filtered.length;
-  document.getElementById('countInfo').textContent = `Exibindo ${filtered.length} de ${allData.length} instituições`;
-
-  // Cards
-  const list = document.getElementById('cardsList');
-  list.innerHTML = '';
-  filtered.forEach(d => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <h3>${escapeHtml(d.nome)}</h3>
-      <div class="meta">${escapeHtml(d.endereco)}</div>
-      <span class="badge ${badgeClass(d.tipo)}">${d.tipo}</span>
-      ${d.telefone ? `<span class="badge badge-outro">${escapeHtml(d.telefone)}</span>` : ''}
-    `;
-    card.addEventListener('click', () => {
-      map.setView([d.latitude, d.longitude], 15);
-      L.popup().setLatLng([d.latitude, d.longitude])
-        .setContent(popupHtml(d)).openOn(map);
+  if (referencePoint) {
+    list.sort((a, b) => {
+      const da = a.distance == null ? Infinity : a.distance;
+      const db = b.distance == null ? Infinity : b.distance;
+      return da - db;
     });
-    list.appendChild(card);
-  });
-
-  // Marcadores
-  markersLayer.clearLayers();
-  filtered.forEach(d => {
-    const marker = L.marker([d.latitude, d.longitude]);
-    marker.bindPopup(popupHtml(d));
-    marker.addTo(markersLayer);
-  });
-}
-
-function popupHtml(d) {
-  return `
-    <h4>${escapeHtml(d.nome)}</h4>
-    <p><strong>Tipo:</strong> ${d.tipo}</p>
-    <p><strong>Endereço:</strong> ${escapeHtml(d.endereco)}</p>
-    ${d.telefone ? `<p><strong>Telefone:</strong> ${escapeHtml(d.telefone)}</p>` : ''}
-    ${d.servicos ? `<p><strong>Serviços:</strong> ${escapeHtml(d.servicos)}</p>` : ''}
-  `;
+  }
+  return list;
 }
 
 function escapeHtml(s) {
-  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return String(s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
-// ============================================================
-// GPS
-// ============================================================
-document.getElementById('gpsBtn').addEventListener('click', () => {
-  if (!navigator.geolocation) {
-    document.getElementById('gpsInfo').textContent = 'Geolocalização não suportada neste navegador.';
+function renderResults() {
+  const list = getFiltered();
+  statusBar.textContent = list.length + " instituições encontradas";
+  if (list.length === 0) {
+    resultsEl.innerHTML = "<div class='loading'>Nenhuma instituição encontrada com os filtros atuais.</div>";
     return;
   }
-  document.getElementById('gpsInfo').textContent = 'Detectando localização...';
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      const { latitude, longitude } = pos.coords;
-      if (userMarker) map.removeLayer(userMarker);
-      userMarker = L.marker([latitude, longitude], { icon: L.divIcon({ html: '📍', className: '', iconSize: [24,24] }) }).addTo(map);
-      map.setView([latitude, longitude], 13);
-      document.getElementById('gpsInfo').textContent = `Localização: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-    },
-    err => {
-      document.getElementById('gpsInfo').textContent = 'Erro ao obter localização: ' + err.message;
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
-  );
-});
+  let html = "<div class='results-title'>Resultados</div>";
+  list.forEach((inst, idx) => {
+    const badges = inst.categorias.map(c => {
+      const cls = (CATEGORIES[c] && CATEGORIES[c].cls) || "badge-other";
+      return `<span class="badge ${cls}">${escapeHtml(c)}</span>`;
+    }).join("");
+    let distHtml = "";
+    if (inst.distance != null) {
+      distHtml = `<div class="card-distance"><i class="fa-solid fa-route"></i> ${inst.distance.toFixed(1)} km de distância</div>`;
+    } else if (referencePoint) {
+      distHtml = `<div class="card-distance" style="color:#999"><i class="fa-solid fa-hourglass-half"></i> Calculando distância...</div>`;
+    }
+    let horarioHtml = "";
+    if (inst.horario) {
+      horarioHtml = `<div class="card-line clock"><i class="fa-regular fa-clock"></i><span>${escapeHtml(inst.horario)}</span></div>`;
+    }
+    let cepHtml = "";
+    if (inst.cep) cepHtml = `<div class="card-line"><i class="fa-solid fa-map-pin"></i><span>CEP: ${escapeHtml(inst.cep)}</span></div>`;
 
-// ============================================================
-// Recarregar dados
-// ============================================================
-document.getElementById('reloadBtn').addEventListener('click', () => {
-  loadAll(true);
-});
+    html += `
+      <div class="card">
+        <div class="card-name">${escapeHtml(inst.nome)}</div>
+        <div class="card-line"><i class="fa-solid fa-location-dot"></i><span>${escapeHtml(inst.endereco || "Endereço não informado")}${inst.bairro ? " - " + escapeHtml(inst.bairro) : ""}${inst.cidade ? ", " + escapeHtml(inst.cidade) : ""}</span></div>
+        ${cepHtml}
+        ${horarioHtml}
+        ${distHtml}
+        <div class="badges">${badges}</div>
+        <a class="card-link" data-idx="${allInstitutions.indexOf(inst)}">Ver no Mapa <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+      </div>`;
+  });
+  resultsEl.innerHTML = html;
+  resultsEl.querySelectorAll(".card-link").forEach(a => {
+    a.addEventListener("click", () => {
+      const i = parseInt(a.dataset.idx);
+      const inst = allInstitutions[i];
+      if (inst && inst.lat != null && inst.lon != null) {
+        map.setView([inst.lat, inst.lon], 16);
+        L.popup().setLatLng([inst.lat, inst.lon])
+          .setContent(`<h4>${escapeHtml(inst.nome)}</h4><p>${escapeHtml(inst.endereco || "")}</p><p>CEP: ${escapeHtml(inst.cep || "-")}</p>`)
+          .openOn(map);
+      } else {
+        alert("Localização ainda não disponível. Aguarde a geocodificação concluir.");
+      }
+    });
+  });
+  updateMarkers();
+}
 
-document.getElementById('searchInput').addEventListener('input', render);
-document.querySelectorAll('#typeFilters input').forEach(i => i.addEventListener('change', render));
+function updateMarkers() {
+  if (!markersLayer) return;
+  markersLayer.clearLayers();
+  const list = getFiltered();
+  list.forEach(inst => {
+    if (inst.lat != null && inst.lon != null) {
+      const m = L.circleMarker([inst.lat, inst.lon], {
+        radius: 8, color: "#fff", weight: 2, fillColor: "#002147", fillOpacity: 0.95
+      });
+      m.bindPopup(`<h4>${escapeHtml(inst.nome)}</h4><p>${escapeHtml(inst.endereco || "")}</p><p>CEP: ${escapeHtml(inst.cep || "-")}</p>`);
+      m.addTo(markersLayer);
+    }
+  });
+}
 
-// ============================================================
-// Fluxo principal
-// ============================================================
-async function loadAll(manual = false) {
-  setLoading(true, 'Carregando dados da planilha...', 'Conectando ao Google Sheets');
-  setStatus('loading', 'Conectando...');
-  if (manual) showInfo('Tentando recarregar dados da planilha...');
+function setReference(lat, lon, label) {
+  referencePoint = { lat, lon, label };
+  allInstitutions.forEach(inst => {
+    if (inst.lat != null) inst.distance = haversine(lat, lon, inst.lat, inst.lon);
+    else inst.distance = null;
+  });
+  if (window._refMarker) map.removeLayer(window._refMarker);
+  window._refMarker = L.marker([lat, lon], { icon: L.divIcon({ className: "", html: '<i class="fa-solid fa-location-dot" style="color:#d81b60;font-size:28px;text-shadow:0 1px 3px rgba(0,0,0,.4)"></i>', iconSize: [28,28], iconAnchor: [14,28] }) }).addTo(map);
+  window._refMarker.bindPopup(label);
+  map.setView([lat, lon], 13);
+  renderResults();
+}
 
+async function buscarCEP() {
+  const cep = cepInput.value.trim().replace(/\D/g, "");
+  if (cep.length !== 8) { alert("Digite um CEP válido com 8 dígitos."); return; }
   try {
-    const result = await loadWithRetry();
-    allData = result.data;
-    dataSource = result.source;
-    setLoading(false);
-    setStatus('ok', `Conectado (${allData.length} registros)`);
-    setDataSourceInfo(`Fonte: ${result.source} | ${allData.length} registros`);
-    log('Carregamento finalizado com sucesso. Total:', allData.length);
-    render();
-    if (manual) showInfo(`${allData.length} registros carregados via ${result.source}.`);
-  } catch (err) {
-    logErr('Falha definitiva ao carregar planilha:', err.message);
-    allData = SAMPLE_DATA.map(normalizeRow).filter(r => r.nome && !isNaN(r.latitude) && !isNaN(r.longitude));
-    dataSource = 'exemplo';
-    setLoading(false);
-    setStatus('err', 'Modo demonstração');
-    setDataSourceInfo('Planilha indisponível. Usando dados de exemplo.');
-    showError('Não foi possível carregar a planilha. Exibindo dados de exemplo. Clique em "Recarregar Dados" para tentar novamente.');
-    log('Carregando dados de exemplo:', allData.length);
-    render();
+    const res = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&country=br&postalcode=" + cep);
+    const data = await res.json();
+    if (data && data.length > 0) {
+      setReference(parseFloat(data[0].lat), parseFloat(data[0].lon), "Referência: CEP " + cep);
+    } else {
+      // fallback ViaCEP para obter logradouro e geocodificar
+      const r2 = await fetch("https://viacep.com.br/ws/" + cep + "/json/");
+      const j2 = await r2.json();
+      if (j2.erro) { alert("CEP não encontrado."); return; }
+      const q = [j2.logradouro, j2.bairro, j2.localidade, j2.uf, "Brasil"].filter(Boolean).join(", ");
+      const r3 = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(q));
+      const d3 = await r3.json();
+      if (d3 && d3.length > 0) setReference(parseFloat(d3[0].lat), parseFloat(d3[0].lon), "Referência: " + j2.logradouro);
+      else alert("Não foi possível localizar o CEP.");
+    }
+  } catch (e) {
+    alert("Erro ao buscar CEP: " + e.message);
   }
 }
 
-// ============================================================
-// Inicialização
-// ============================================================
-window.addEventListener('DOMContentLoaded', () => {
-  log('Inicializando Localizador de Parceiros Sema MPDFT');
-  log('Sheet ID:', SHEET_ID);
-  initMap();
-  loadAll(false);
+function usarGPS() {
+  if (!navigator.geolocation) { alert("Geolocalização não suportada."); return; }
+  statusBar.textContent = "Obtendo localização GPS...";
+  navigator.geolocation.getCurrentPosition(pos => {
+    setReference(pos.coords.latitude, pos.coords.longitude, "Sua localização (GPS)");
+  }, err => {
+    alert("Erro ao obter GPS: " + err.message);
+  }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
+function limparFiltros() {
+  searchInput.value = "";
+  cepInput.value = "";
+  radiusSlider.value = 0;
+  radiusKm = 0;
+  radiusValue.textContent = "Sem limite";
+  activeCategory = "Todos";
+  document.querySelectorAll(".pill").forEach(p => p.classList.remove("active"));
+  document.querySelector(".pill-all").classList.add("active");
+  referencePoint = null;
+  allInstitutions.forEach(i => i.distance = null);
+  if (window._refMarker) { map.removeLayer(window._refMarker); window._refMarker = null; }
+  map.setView([-15.7801, -47.9292], 11);
+  renderResults();
+}
+
+// Eventos
+document.getElementById("searchBtn").addEventListener("click", renderResults);
+searchInput.addEventListener("input", renderResults);
+document.getElementById("cepBtn").addEventListener("click", buscarCEP);
+cepInput.addEventListener("keypress", e => { if (e.key === "Enter") buscarCEP(); });
+document.getElementById("gpsBtn").addEventListener("click", usarGPS);
+document.getElementById("clearBtn").addEventListener("click", limparFiltros);
+
+radiusSlider.addEventListener("input", () => {
+  radiusKm = parseInt(radiusSlider.value);
+  radiusValue.textContent = radiusKm === 0 ? "Sem limite" : radiusKm + " km";
+  renderResults();
 });
+
+document.querySelectorAll(".pill").forEach(pill => {
+  pill.addEventListener("click", () => {
+    document.querySelectorAll(".pill").forEach(p => p.classList.remove("active"));
+    pill.classList.add("active");
+    activeCategory = pill.dataset.cat;
+    renderResults();
+  });
+});
+
+// Inicialização
+initMap();
+loadCSV();
 </script>
 </body>
 </html>
