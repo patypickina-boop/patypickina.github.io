@@ -11,14 +11,14 @@
     --navy: #002147;
     --blue: #1a73e8;
     --pink: #e91e63;
-    --gray: #6c757d;
-    --green: #28a745;
-    --red: #dc3545;
-    --purple: #6f42c1;
+    --green: #2e7d32;
+    --red: #c62828;
+    --purple: #7b1fa2;
+    --gray: #6b7280;
     --bg: #f4f6f9;
     --border: #e0e4ea;
   }
-  body { background: var(--bg); color: #222; }
+  body { background: var(--bg); color: #1f2937; }
 
   /* Header */
   header {
@@ -28,128 +28,97 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    position: sticky; top: 0; z-index: 1000;
+    box-shadow: 0 2px 6px rgba(0,0,0,.2);
   }
   header .icon { font-size: 30px; }
-  header h1 { font-size: 20px; font-weight: 700; line-height: 1.1; }
-  header p { font-size: 13px; opacity: 0.85; }
+  header h1 { font-size: 20px; font-weight: 700; }
+  header p { font-size: 13px; opacity: .85; }
 
   /* Layout */
-  .app { display: flex; height: calc(100vh - 70px); }
+  .app { display: flex; height: calc(100vh - 64px); }
   .sidebar {
-    width: 420px; min-width: 320px;
+    width: 420px;
+    min-width: 320px;
     background: #fff;
     border-right: 1px solid var(--border);
-    display: flex; flex-direction: column;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
   }
-  .map-wrap { flex: 1; position: relative; }
-  #map { width: 100%; height: 100%; }
-
-  /* Filters */
-  .filters {
+  .sidebar-header {
     padding: 14px 16px;
     border-bottom: 1px solid var(--border);
-    overflow-y: auto;
-    max-height: 45%;
+    background: #fafbfc;
   }
-  .filters h2 {
-    font-size: 15px; color: var(--navy);
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 12px;
-  }
-  .search-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .sidebar-header h2 { font-size: 16px; display: flex; align-items: center; gap: 8px; color: var(--navy); }
+
+  .filters { padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--border); }
+  .search-row { display: flex; gap: 8px; }
   .search-row input {
-    flex: 1; padding: 9px 11px; border: 1px solid var(--border);
-    border-radius: 6px; font-size: 13px;
+    flex: 1; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none;
   }
+  .search-row input:focus { border-color: var(--blue); }
   .btn {
-    border: none; cursor: pointer; border-radius: 6px;
-    padding: 9px 12px; font-size: 13px; font-weight: 600;
-    display: inline-flex; align-items: center; gap: 6px;
-    transition: 0.15s;
+    border: none; cursor: pointer; border-radius: 8px; padding: 9px 12px; font-size: 13px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px; transition: .15s;
   }
   .btn-blue { background: var(--blue); color: #fff; }
+  .btn-blue:hover { background: #1557b8; }
   .btn-pink { background: var(--pink); color: #fff; }
-  .btn-gray { background: var(--gray); color: #fff; }
-  .btn-outline { background: #fff; color: var(--navy); border: 1px solid var(--border); }
-  .btn:hover { opacity: 0.88; }
+  .btn-pink:hover { background: #c1134e; }
+  .btn-gray { background: #eef1f5; color: #333; border: 1px solid var(--border); }
+  .btn-gray:hover { background: #e0e4ea; }
+  .btn-group { display: flex; gap: 8px; }
 
-  .loc-row { display: flex; gap: 8px; margin-bottom: 10px; }
-  .loc-row input { flex: 1; padding: 9px 11px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
-  .action-row { display: flex; gap: 8px; margin-bottom: 12px; }
-  .action-row .btn { flex: 1; justify-content: center; }
+  .radius-row { display: flex; flex-direction: column; gap: 6px; }
+  .radius-row label { font-size: 13px; font-weight: 600; color: #333; }
+  .radius-row input[type=range] { width: 100%; accent-color: var(--blue); }
+  .radius-value { font-size: 12px; color: var(--gray); }
 
-  .slider-block { margin-bottom: 14px; }
-  .slider-block label { font-size: 13px; font-weight: 600; color: #333; display: block; margin-bottom: 6px; }
-  .slider-block input[type=range] { width: 100%; accent-color: var(--blue); }
-  .slider-block .hint { font-size: 11px; color: var(--gray); margin-top: 4px; }
-
-  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; }
   .pill {
-    border: none; cursor: pointer; border-radius: 20px;
-    padding: 6px 12px; font-size: 12px; font-weight: 600; color: #fff;
-    transition: 0.15s; opacity: 0.55;
+    border: none; cursor: pointer; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #fff;
+    opacity: .55; transition: .15s;
   }
-  .pill.active { opacity: 1; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+  .pill.active { opacity: 1; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
   .pill-all { background: var(--gray); }
   .pill-services { background: var(--blue); }
   .pill-pecuniary { background: var(--green); }
   .pill-health { background: var(--red); }
   .pill-lectures { background: var(--purple); }
 
-  /* Results */
-  .results { flex: 1; overflow-y: auto; padding: 10px 14px; }
   .status {
-    padding: 8px 14px; font-size: 12px; color: var(--gray);
-    background: #fafbfc; border-top: 1px solid var(--border);
-    text-align: center;
+    padding: 8px 16px; font-size: 12px; color: var(--gray); border-top: 1px solid var(--border); background: #fafbfc;
   }
+
+  .results { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
   .card {
-    background: #fff; border: 1px solid var(--border); border-radius: 8px;
-    padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    transition: 0.15s;
+    background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.04);
   }
-  .card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
-  .card .name { font-weight: 700; color: #000; font-size: 14px; margin-bottom: 4px; }
-  .card .line { font-size: 12px; color: #555; margin-bottom: 2px; }
-  .card .badges { margin: 8px 0; display: flex; flex-wrap: wrap; gap: 5px; }
-  .badge {
-    font-size: 10px; font-weight: 700; color: #fff; padding: 3px 8px;
-    border-radius: 12px; text-transform: uppercase; letter-spacing: 0.3px;
-  }
+  .card h3 { font-size: 14px; color: #111; margin-bottom: 4px; }
+  .card .meta { font-size: 12px; color: #555; margin: 2px 0; }
+  .card .badges { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
+  .badge { font-size: 10px; padding: 3px 8px; border-radius: 999px; color: #fff; font-weight: 600; }
   .badge-services { background: var(--blue); }
   .badge-pecuniary { background: var(--green); }
   .badge-health { background: var(--red); }
   .badge-lectures { background: var(--purple); }
   .badge-other { background: var(--gray); }
-  .card .map-link {
-    display: inline-block; margin-top: 6px; font-size: 12px; color: var(--blue);
-    text-decoration: none; font-weight: 600; cursor: pointer;
-  }
+  .card .map-link { font-size: 12px; color: var(--blue); text-decoration: none; font-weight: 600; cursor: pointer; }
   .card .map-link:hover { text-decoration: underline; }
-  .card .dist { font-size: 11px; color: var(--pink); font-weight: 600; margin-top: 4px; }
+  .card .dist { font-size: 11px; color: var(--pink); font-weight: 600; }
 
-  .loading { text-align: center; padding: 30px; color: var(--gray); font-size: 13px; }
-  .empty { text-align: center; padding: 30px; color: var(--gray); font-size: 13px; }
+  /* Map */
+  .map-wrap { flex: 1; position: relative; }
+  #map { width: 100%; height: 100%; }
+
+  .loading { padding: 20px; text-align: center; color: var(--gray); font-size: 13px; }
 
   /* Mobile */
-  .mobile-tabs { display: none; }
   @media (max-width: 768px) {
     .app { flex-direction: column; height: auto; }
-    .sidebar { width: 100%; min-width: 0; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+    .sidebar { width: 100%; min-width: 0; height: 60vh; }
     .map-wrap { height: 50vh; }
-    .mobile-tabs {
-      display: flex; background: var(--navy); position: sticky; top: 70px; z-index: 999;
-    }
-    .mobile-tabs button {
-      flex: 1; padding: 12px; border: none; background: transparent; color: #fff;
-      font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent;
-    }
-    .mobile-tabs button.active { border-bottom-color: var(--pink); }
-    .sidebar.hidden-mobile, .map-wrap.hidden-mobile { display: none; }
-    .filters { max-height: none; }
   }
 </style>
 </head>
@@ -163,43 +132,40 @@
   </div>
 </header>
 
-<div class="mobile-tabs">
-  <button id="tabList" class="active" onclick="showTab('list')">📋 Lista</button>
-  <button id="tabMap" onclick="showTab('map')">🗺️ Mapa</button>
-</div>
-
 <div class="app">
-  <aside class="sidebar" id="sidebar">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>🔍 Filtros</h2>
+    </div>
+
     <div class="filters">
-      <h2>🔎 Filtros</h2>
+      <div class="search-row">
+        <input type="text" id="globalSearch" placeholder="Buscar por nome, endereço, programa, cidade, horário..." />
+        <button class="btn btn-blue" id="searchBtn">🔍</button>
+      </div>
 
       <div class="search-row">
-        <input type="text" id="globalSearch" placeholder="Buscar por nome, endereço, programa, cidade, horário..." oninput="applyFilters()">
-        <button class="btn btn-blue" onclick="applyFilters()" title="Buscar">🔍</button>
+        <input type="text" id="cepInput" placeholder="72426-075" value="72426-075" />
+        <button class="btn btn-pink" id="locateBtn">📍 Buscar Localização</button>
       </div>
 
-      <div class="loc-row">
-        <input type="text" id="cepInput" placeholder="72426-075" value="72426-075">
-        <button class="btn btn-pink" onclick="buscarLocalizacao()" title="Buscar Localização">📍 Buscar Localização</button>
+      <div class="btn-group">
+        <button class="btn btn-gray" id="gpsBtn">📡 GPS</button>
+        <button class="btn btn-gray" id="clearBtn">🧹 Limpar</button>
       </div>
 
-      <div class="action-row">
-        <button class="btn btn-outline" onclick="usarGPS()">📡 GPS</button>
-        <button class="btn btn-outline" onclick="limparFiltros()">🧹 Limpar</button>
+      <div class="radius-row">
+        <label for="radiusSlider">Raio: <span id="radiusLabel">Sem limite</span></label>
+        <input type="range" id="radiusSlider" min="0" max="200" value="0" step="5" />
+        <div class="radius-value" id="radiusHint">0 = Sem limite</div>
       </div>
 
-      <div class="slider-block">
-        <label id="radiusLabel">Raio: Sem limite</label>
-        <input type="range" id="radiusSlider" min="0" max="200" value="0" oninput="onRadiusChange()">
-        <div class="hint">0 = Sem limite · arraste para definir distância máxima (km)</div>
-      </div>
-
-      <div class="pills">
-        <button class="pill pill-all active" data-cat="Todos" onclick="selectCategory(this)">Todos</button>
-        <button class="pill pill-services" data-cat="Prestação de Serviços" onclick="selectCategory(this)">Prestação de Serviços</button>
-        <button class="pill pill-pecuniary" data-cat="Prestação Pecuniária" onclick="selectCategory(this)">Prestação Pecuniária</button>
-        <button class="pill pill-health" data-cat="Programa de Saúde" onclick="selectCategory(this)">Programa de Saúde</button>
-        <button class="pill pill-lectures" data-cat="Palestras" onclick="selectCategory(this)">Palestras</button>
+      <div class="pills" id="pills">
+        <button class="pill pill-all active" data-cat="Todos">Todos</button>
+        <button class="pill pill-services" data-cat="Prestação de Serviços">Prestação de Serviços</button>
+        <button class="pill pill-pecuniary" data-cat="Prestação Pecuniária">Prestação Pecuniária</button>
+        <button class="pill pill-health" data-cat="Programa de Saúde">Programa de Saúde</button>
+        <button class="pill pill-lectures" data-cat="Palestras">Palestras</button>
       </div>
     </div>
 
@@ -210,333 +176,317 @@
     <div class="status" id="status">0 instituições encontradas</div>
   </aside>
 
-  <div class="map-wrap" id="mapWrap">
+  <div class="map-wrap">
     <div id="map"></div>
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw/gviz/tq?tqx=out:json";
-const CACHE_KEY = "sema_mpdft_geocode_cache_v28";
-const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=";
+const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw/gviz/tq?tqx=out:json';
+const CACHE_KEY = 'sema_mpdft_geocode_cache_v28';
+const CATEGORY_MAP = {
+  'Prestação de Serviços': 'services',
+  'Prestação Pecuniária': 'pecuniary',
+  'Programa de Saúde': 'health',
+  'Palestras': 'lectures'
+};
 
 let allData = [];
 let filteredData = [];
-let currentCategory = "Todos";
+let activeCategory = 'Todos';
 let referencePoint = null; // {lat, lng}
 let map = null;
 let markersLayer = null;
+let geocodeCache = {};
 
-/* ---------- Init ---------- */
-window.addEventListener('DOMContentLoaded', () => {
-  initMap();
-  loadData();
-});
+// ---------- Init ----------
+const mapEl = document.getElementById('map');
+map = L.map(mapEl).setView([-15.7801, -47.9292], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap', maxZoom: 19
+}).addTo(map);
+markersLayer = L.layerGroup().addTo(map);
 
-function initMap() {
-  map = L.map('map').setView([-15.7939, -47.8828], 11); // Brasília
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap', maxZoom: 19
-  }).addTo(map);
-  markersLayer = L.layerGroup().addTo(map);
+// Load geocode cache
+try {
+  geocodeCache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+} catch(e) { geocodeCache = {}; }
+function saveCache() {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(geocodeCache)); } catch(e) {}
 }
 
-/* ---------- Data loading (gviz) ---------- */
+// ---------- Data loading ----------
 async function loadData() {
   try {
-    const res = await fetch(SHEET_URL);
+    const res = await fetch(SPREADSHEET_URL, { cache: 'no-store' });
     const text = await res.text();
-    const json = parseGviz(text);
-    const rows = json.rows || [];
-    const cols = json.cols || [];
+    const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1));
+    const rows = json.table.rows || [];
+    const cols = json.table.cols || [];
+    const headers = cols.map(c => (c.label || '').trim());
 
     allData = rows.map(r => {
-      const c = r.c || [];
-      const get = (i) => (c[i] && c[i].v !== null && c[i].v !== undefined) ? String(c[i].v).trim() : "";
-      return {
-        nome: get(0),
-        endereco: get(1),
-        cep: get(2),
-        cidade: get(3),
-        horario: get(4),
-        dias: get(5),
-        programas: get(6),
-        telefone: get(7),
-        responsavel: get(8),
-        observacoes: get(9)
-      };
-    }).filter(x => x.nome || x.endereco);
+      const obj = {};
+      (r.c || []).forEach((cell, i) => {
+        const key = headers[i] || ('col' + i);
+        obj[key] = cell ? (cell.v !== null && cell.v !== undefined ? String(cell.v) : '') : '';
+      });
+      return normalizeRow(obj);
+    }).filter(x => x.nome);
 
-    applyFilters();
-    geocodeAll(); // async background geocoding
+    renderResults();
+    geocodeAll();
   } catch (err) {
+    document.getElementById('results').innerHTML = '<div class="loading">Erro ao carregar dados. Verifique sua conexão.</div>';
     console.error(err);
-    document.getElementById('results').innerHTML = '<div class="empty">Erro ao carregar dados. Verifique sua conexão.</div>';
   }
 }
 
-function parseGviz(text) {
-  // gviz returns: /*O_o*/ google.visualization.Query.setResponse({...});
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  const jsonStr = text.substring(start, end + 1);
-  return JSON.parse(jsonStr);
+function findKey(obj, candidates) {
+  for (const c of candidates) {
+    const found = Object.keys(obj).find(k => k.toLowerCase().replace(/[^a-z0-9]/g,'') === c.toLowerCase().replace(/[^a-z0-9]/g,'')) ;
+    if (found) return found;
+  }
+  return null;
 }
 
-/* ---------- Geocoding with cache ---------- */
-function getCache() {
-  try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; }
-  catch { return {}; }
-}
-function setCache(cache) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
+function normalizeRow(obj) {
+  const get = (...keys) => {
+    for (const k of keys) {
+      const found = findKey(obj, [k]);
+      if (found && obj[found]) return obj[found].trim();
+    }
+    return '';
+  };
+  return {
+    nome: get('Nome', 'Instituicao', 'RazaoSocial', 'Nome da Instituição'),
+    endereco: get('Endereço', 'Endereco', 'Logradouro'),
+    cep: get('CEP', 'Cep'),
+    cidade: get('Cidade', 'Municipio'),
+    estado: get('Estado', 'UF'),
+    horario: get('Horário de Funcionamento', 'Horario', 'Horário'),
+    dias: get('Dias da Semana', 'Dias', 'Funcionamento'),
+    programas: get('Programas', 'Programa', 'Tipo', 'Categoria'),
+    telefone: get('Telefone', 'Contato'),
+    email: get('Email', 'E-mail'),
+    lat: '',
+    lng: ''
+  };
 }
 
-async function geocodeAddress(item) {
-  const key = `${item.endereco}, ${item.cep} ${item.cidade}`.trim();
-  const cache = getCache();
-  if (cache[key]) return cache[key];
+// ---------- Geocoding ----------
+function buildQueryAddress(item) {
+  const parts = [item.endereco, item.cidade, item.estado, 'Brasil'].filter(Boolean);
+  return parts.join(', ');
+}
 
-  const query = encodeURIComponent(`${item.endereco} ${item.cep} ${item.cidade} Brasil`);
+async function geocodeAddress(address) {
+  if (!address) return null;
+  const key = address.toLowerCase().trim();
+  if (geocodeCache[key]) return geocodeCache[key];
   try {
-    const res = await fetch(NOMINATIM_URL + query, {
-      headers: { 'Accept-Language': 'pt-BR' }
-    });
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(address);
+    const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+    if (!res.ok) return null;
     const data = await res.json();
     if (data && data.length > 0) {
       const coords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-      cache[key] = coords;
-      setCache(cache);
+      geocodeCache[key] = coords;
+      saveCache();
       return coords;
     }
-  } catch (e) { console.warn('Geocode fail', key, e); }
+  } catch(e) { console.warn('Geocode fail', address, e); }
   return null;
 }
 
 async function geocodeAll() {
-  for (const item of allData) {
-    if (!item.endereco && !item.cep) continue;
-    const coords = await geocodeAddress(item);
+  const queue = allData.filter(x => x.endereco || x.cidade);
+  for (const item of queue) {
+    const addr = buildQueryAddress(item);
+    const coords = await geocodeAddress(addr);
     if (coords) {
       item.lat = coords.lat;
       item.lng = coords.lng;
     }
-    await new Promise(r => setTimeout(r, 1100)); // respeitar rate limit do Nominatim
+    await new Promise(r => setTimeout(r, 1100)); // Nominatim rate limit
   }
-  applyFilters();
+  renderResults();
 }
 
-/* ---------- Filters ---------- */
-function selectCategory(btn) {
-  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  currentCategory = btn.dataset.cat;
-  applyFilters();
-}
-
-function onRadiusChange() {
-  const v = parseInt(document.getElementById('radiusSlider').value, 10);
-  document.getElementById('radiusLabel').textContent = v === 0 ? 'Raio: Sem limite' : `Raio: ${v} km`;
-  applyFilters();
+// ---------- Filtering ----------
+function haversine(a, b) {
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const la1 = a.lat * Math.PI / 180;
+  const la2 = b.lat * Math.PI / 180;
+  const h = Math.sin(dLat/2)**2 + Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(h));
 }
 
 function applyFilters() {
-  const q = document.getElementById('globalSearch').value.toLowerCase().trim();
-  const radius = parseInt(document.getElementById('radiusSlider').value, 10);
+  const q = document.getElementById('globalSearch').value.trim().toLowerCase();
+  const radiusVal = parseInt(document.getElementById('radiusSlider').value, 10);
 
   filteredData = allData.filter(item => {
-    // Categoria
-    if (currentCategory !== "Todos") {
-      if (!item.programas.toLowerCase().includes(currentCategory.toLowerCase())) return false;
+    if (activeCategory !== 'Todos') {
+      if (!item.programas.toLowerCase().includes(activeCategory.toLowerCase())) return false;
     }
-    // Busca global em todos os campos
     if (q) {
-      const blob = [
-        item.nome, item.endereco, item.cep, item.cidade,
-        item.horario, item.dias, item.programas,
-        item.telefone, item.responsavel, item.observacoes
-      ].join(' ').toLowerCase();
+      const blob = [item.nome, item.endereco, item.cep, item.cidade, item.estado, item.horario, item.dias, item.programas, item.telefone, item.email]
+        .join(' ').toLowerCase();
       if (!blob.includes(q)) return false;
     }
-    // Raio
-    if (radius > 0 && referencePoint && item.lat && item.lng) {
-      const d = haversine(referencePoint.lat, referencePoint.lng, item.lat, item.lng);
-      if (d > radius) return false;
+    if (radiusVal > 0 && referencePoint && item.lat && item.lng) {
+      const d = haversine(referencePoint, { lat: item.lat, lng: item.lng });
+      if (d > radiusVal) return false;
     }
     return true;
   });
 
-  // Ordenação por distância (mais próxima primeiro)
   if (referencePoint) {
     filteredData.sort((a, b) => {
-      const da = (a.lat && a.lng) ? haversine(referencePoint.lat, referencePoint.lng, a.lat, a.lng) : Infinity;
-      const db = (b.lat && b.lng) ? haversine(referencePoint.lat, referencePoint.lng, b.lat, b.lng) : Infinity;
+      const da = (a.lat && a.lng) ? haversine(referencePoint, a) : 999999;
+      const db = (b.lat && b.lng) ? haversine(referencePoint, b) : 999999;
       return da - db;
     });
   }
-
-  renderResults();
-  renderMarkers();
 }
 
-function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return 2 * R * Math.asin(Math.sqrt(a));
-}
-
-/* ---------- Render ---------- */
+// ---------- Rendering ----------
 function categoryBadges(programas) {
   if (!programas) return '';
-  const cats = [
-    { k: 'prestação de serviços', c: 'badge-services' },
-    { k: 'prestação pecuniária', c: 'badge-pecuniary' },
-    { k: 'programa de saúde', c: 'badge-health' },
-    { k: 'palestras', c: 'badge-lectures' }
-  ];
-  const lower = programas.toLowerCase();
-  let html = '';
-  cats.forEach(cat => {
-    if (lower.includes(cat.k)) {
-      html += `<span class="badge ${cat.c}">${cat.k.replace(/\b\w/g, m => m.toUpperCase())}</span>`;
+  const items = programas.split(/[,;|]/).map(s => s.trim()).filter(Boolean);
+  return items.map(p => {
+    let cls = 'badge-other';
+    for (const [cat, code] of Object.entries(CATEGORY_MAP)) {
+      if (p.toLowerCase().includes(cat.toLowerCase())) { cls = 'badge-' + code; break; }
     }
-  });
-  // Outros programas (separados por vírgula) que não casam
-  programas.split(/[,;|]/).map(s => s.trim()).filter(Boolean).forEach(p => {
-    const lp = p.toLowerCase();
-    if (!cats.some(c => lp.includes(c.k))) {
-      html += `<span class="badge badge-other">${escapeHtml(p)}</span>`;
-    }
-  });
-  return html;
+    return `<span class="badge ${cls}">${escapeHtml(p)}</span>`;
+  }).join('');
 }
 
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 function renderResults() {
+  applyFilters();
   const container = document.getElementById('results');
   document.getElementById('status').textContent = `${filteredData.length} instituições encontradas`;
 
   if (filteredData.length === 0) {
-    container.innerHTML = '<div class="empty">Nenhuma instituição encontrada com os filtros atuais.</div>';
+    container.innerHTML = '<div class="loading">Nenhuma instituição encontrada com os filtros atuais.</div>';
+    updateMap();
     return;
   }
 
   container.innerHTML = filteredData.map((item, idx) => {
     let dist = '';
     if (referencePoint && item.lat && item.lng) {
-      const d = haversine(referencePoint.lat, referencePoint.lng, item.lat, item.lng);
+      const d = haversine(referencePoint, item);
       dist = `<div class="dist">📍 ${d.toFixed(1)} km de distância</div>`;
     }
     return `
       <div class="card">
-        <div class="name">${escapeHtml(item.nome || 'Sem nome')}</div>
-        ${item.endereco ? `<div class="line">🏠 ${escapeHtml(item.endereco)}</div>` : ''}
-        ${item.cep ? `<div class="line">📮 ${escapeHtml(item.cep)}</div>` : ''}
-        ${item.cidade ? `<div class="line">🏙️ ${escapeHtml(item.cidade)}</div>` : ''}
-        ${item.horario ? `<div class="line">🕒 ${escapeHtml(item.horario)}</div>` : ''}
-        ${item.dias ? `<div class="line">📅 ${escapeHtml(item.dias)}</div>` : ''}
+        <h3>${escapeHtml(item.nome)}</h3>
+        ${item.endereco ? `<div class="meta">🏠 ${escapeHtml(item.endereco)}</div>` : ''}
+        ${item.cep ? `<div class="meta">📮 ${escapeHtml(item.cep)}</div>` : ''}
+        ${item.cidade ? `<div class="meta">🏙️ ${escapeHtml(item.cidade)}${item.estado ? ' - ' + escapeHtml(item.estado) : ''}</div>` : ''}
+        ${item.horario ? `<div class="meta">🕒 ${escapeHtml(item.horario)}</div>` : ''}
+        ${item.dias ? `<div class="meta">📅 ${escapeHtml(item.dias)}</div>` : ''}
         <div class="badges">${categoryBadges(item.programas)}</div>
         ${dist}
-        <a class="map-link" onclick="focusMarker(${idx})">Ver no Mapa →</a>
+        <a class="map-link" data-idx="${idx}">Ver no Mapa →</a>
       </div>
     `;
   }).join('');
+
+  container.querySelectorAll('.map-link').forEach(link => {
+    link.addEventListener('click', () => {
+      const idx = parseInt(link.dataset.idx, 10);
+      const item = filteredData[idx];
+      if (item && item.lat && item.lng) {
+        map.setView([item.lat, item.lng], 15);
+        L.popup().setLatLng([item.lat, item.lng]).setContent(`<b>${escapeHtml(item.nome)}</b>`).openOn(map);
+      } else {
+        alert('Localização ainda não disponível para esta instituição.');
+      }
+    });
+  });
+
+  updateMap();
 }
 
-function renderMarkers() {
+function updateMap() {
   markersLayer.clearLayers();
   filteredData.forEach(item => {
     if (item.lat && item.lng) {
-      const marker = L.marker([item.lat, item.lng], {
-        icon: L.divIcon({ className: 'blue-marker', html: '<div style="background:#1a73e8;width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.5)"></div>', iconSize:[18,18], iconAnchor:[9,9] })
+      const m = L.marker([item.lat, item.lng], {
+        icon: L.divIcon({ className: '', html: '<div style="background:#1a73e8;width:18px;height:18px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)"></div>', iconSize:[18,18], iconAnchor:[9,18] })
       });
-      marker.bindPopup(`<strong>${escapeHtml(item.nome)}</strong><br>${escapeHtml(item.endereco)}<br>${escapeHtml(item.cep)} - ${escapeHtml(item.cidade)}`);
-      markersLayer.addLayer(marker);
+      m.bindPopup(`<b>${escapeHtml(item.nome)}</b><br>${escapeHtml(item.endereco || '')}<br>${escapeHtml(item.cidade || '')}`);
+      m.addTo(markersLayer);
     }
   });
 }
 
-function focusMarker(idx) {
-  const item = filteredData[idx];
-  if (item && item.lat && item.lng) {
-    if (window.innerWidth <= 768) showTab('map');
-    map.setView([item.lat, item.lng], 15);
-    markersLayer.eachLayer(m => {
-      const ll = m.getLatLng();
-      if (Math.abs(ll.lat - item.lat) < 0.0001 && Math.abs(ll.lng - item.lng) < 0.0001) {
-        m.openPopup();
-      }
-    });
-  } else {
-    alert('Localização ainda não disponível. Aguarde a geocodificação ou tente novamente.');
-  }
-}
+// ---------- Events ----------
+document.getElementById('searchBtn').addEventListener('click', renderResults);
+document.getElementById('globalSearch').addEventListener('input', renderResults);
 
-/* ---------- Location ---------- */
-async function buscarLocalizacao() {
-  const cep = document.getElementById('cepInput').value.trim();
-  if (!cep) { alert('Digite um CEP ou endereço.'); return; }
-  try {
-    const res = await fetch(NOMINATIM_URL + encodeURIComponent(cep + ' Brasil'));
-    const data = await res.json();
-    if (data && data.length > 0) {
-      referencePoint = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-      map.setView([referencePoint.lat, referencePoint.lng], 12);
-      applyFilters();
-    } else {
-      alert('Localização não encontrada.');
-    }
-  } catch (e) {
-    alert('Erro ao buscar localização.');
-  }
-}
+document.getElementById('pills').addEventListener('click', e => {
+  const btn = e.target.closest('.pill');
+  if (!btn) return;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  activeCategory = btn.dataset.cat;
+  renderResults();
+});
 
-function usarGPS() {
-  if (!navigator.geolocation) { alert('GPS não suportado neste dispositivo.'); return; }
-  navigator.geolocation.getCurrentPosition(pos => {
-    referencePoint = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    map.setView([referencePoint.lat, referencePoint.lng], 12);
-    applyFilters();
-  }, () => alert('Não foi possível obter sua localização.'), { enableHighAccuracy: true, timeout: 10000 });
-}
+document.getElementById('radiusSlider').addEventListener('input', e => {
+  const v = parseInt(e.target.value, 10);
+  document.getElementById('radiusLabel').textContent = v === 0 ? 'Sem limite' : v + ' km';
+  renderResults();
+});
 
-function limparFiltros() {
+document.getElementById('clearBtn').addEventListener('click', () => {
   document.getElementById('globalSearch').value = '';
   document.getElementById('cepInput').value = '';
   document.getElementById('radiusSlider').value = 0;
-  document.getElementById('radiusLabel').textContent = 'Raio: Sem limite';
+  document.getElementById('radiusLabel').textContent = 'Sem limite';
   referencePoint = null;
+  activeCategory = 'Todos';
   document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
   document.querySelector('.pill-all').classList.add('active');
-  currentCategory = 'Todos';
-  applyFilters();
-}
+  renderResults();
+});
 
-/* ---------- Mobile tabs ---------- */
-function showTab(tab) {
-  const sidebar = document.getElementById('sidebar');
-  const mapWrap = document.getElementById('mapWrap');
-  const tabList = document.getElementById('tabList');
-  const tabMap = document.getElementById('tabMap');
-  if (tab === 'list') {
-    sidebar.classList.remove('hidden-mobile');
-    mapWrap.classList.add('hidden-mobile');
-    tabList.classList.add('active');
-    tabMap.classList.remove('active');
+document.getElementById('locateBtn').addEventListener('click', async () => {
+  const cep = document.getElementById('cepInput').value.trim();
+  if (!cep) { alert('Digite um CEP ou endereço.'); return; }
+  const coords = await geocodeAddress(cep + ', Brasil');
+  if (coords) {
+    referencePoint = coords;
+    map.setView([coords.lat, coords.lng], 13);
+    renderResults();
   } else {
-    sidebar.classList.add('hidden-mobile');
-    mapWrap.classList.remove('hidden-mobile');
-    tabList.classList.remove('active');
-    tabMap.classList.add('active');
-    setTimeout(() => map.invalidateSize(), 200);
+    alert('Não foi possível localizar o endereço informado.');
   }
-}
+});
+
+document.getElementById('gpsBtn').addEventListener('click', () => {
+  if (!navigator.geolocation) { alert('Geolocalização não suportada.'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    referencePoint = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    map.setView([referencePoint.lat, referencePoint.lng], 13);
+    renderResults();
+  }, () => alert('Não foi possível obter sua localização.'));
+});
+
+// Start
+loadData();
 </script>
 </body>
 </html>
