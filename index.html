@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
     <style>
         :root {
@@ -36,7 +37,7 @@
         /* Layout */
         main { flex: 1; display: flex; overflow: hidden; position: relative; }
 
-        /* Sidebar */
+        /* Sidebar (Fiel à Foto) */
         #sidebar {
             width: 380px;
             background: white;
@@ -62,7 +63,7 @@
         .radius-control label { font-size: 0.8rem; color: #666; display: block; margin-bottom: 5px; }
         .radius-control input { width: 100%; accent-color: var(--primary); }
 
-        /* Pills de Categoria (Idêntico à Foto) */
+        /* Pills de Categoria (Cores da Foto) */
         .category-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
         .pill {
             padding: 5px 12px;
@@ -122,7 +123,7 @@
 
 <div id="loader">
     <div class="spinner"></div>
-    <p style="margin-top:15px; font-weight:bold; color:var(--primary)">Sincronizando com Google Sheets...</p>
+    <p style="margin-top:15px; font-weight:bold; color:var(--primary)">Sincronizando com MPDFT...</p>
 </div>
 
 <header>
@@ -137,7 +138,7 @@
             
             <div class="search-wrapper">
                 <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Busque por nome, programa, cidade...">
+                <input type="text" id="search-input" placeholder="Busque por nome, programa, cidade, CEP...">
             </div>
 
             <div class="location-wrapper">
@@ -152,9 +153,9 @@
 
             <div class="category-pills">
                 <div class="pill pill-all active" onclick="filterCategory('Todos', this)">Todos</div>
-                <div class="pill pill-servicos" onclick="filterCategory('Prestação de Serviços', this)">Prestação de Serviços</div>
-                <div class="pill pill-pecuniaria" onclick="filterCategory('Prestação Pecuniária', this)">Prestação Pecuniária</div>
-                <div class="pill pill-saude" onclick="filterCategory('Programa de Saúde', this)">Programa de Saúde</div>
+                <div class="pill pill-servicos" onclick="filterCategory('Prestação de serviços', this)">Prestação de Serviços</div>
+                <div class="pill pill-pecuniaria" onclick="filterCategory('Prestação  pecuniária', this)">Prestação Pecuniária</div>
+                <div class="pill pill-saude" onclick="filterCategory('Programa de saúde', this)">Programa de Saúde</div>
                 <div class="pill pill-palestras" onclick="filterCategory('Palestras', this)">Palestras</div>
             </div>
         </div>
@@ -172,8 +173,8 @@
 
 <script>
     const SHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
-    // Endpoint Gviz: Mais estável e contorna bloqueios de CORS
-    const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+    // Link de exportação direta (CSV) - O mais estável contra bloqueios
+    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
 
     let map, markers = [], allData = [], currentCategory = 'Todos';
 
@@ -185,38 +186,29 @@
         loadData();
     }
 
-    async function loadData() {
-        try {
-            const response = await fetch(GVIZ_URL);
-            const text = await response.text();
-            // Limpa o prefixo do Google para transformar em JSON puro
-            const json = JSON.parse(text.substring(47, text.length - 2));
-            
-            const rows = json.table.rows;
-            const cols = json.table.cols;
-
-            allData = rows.map(row => {
-                const item = {};
-                row.c.forEach((cell, i) => {
-                    if (cols[i]) item[cols[i].label] = cell ? cell.v : '';
-                });
-                return {
-                    nome: item['Nome da Instituição'],
+    function loadData() {
+        Papa.parse(CSV_URL, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                // Mapeamento corrigido para os nomes reais da sua planilha (incluindo o espaço em "Nome ")
+                allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição']).map(item => ({
+                    nome: item['Nome '] || item['Nome da Instituição'],
                     endereco: item['Endereço'],
                     cep: item['CEP'],
-                    programas: item['Programas'],
-                    horario: item['Horário de Funcionamento/Observações'],
-                    lat: parseFloat(item['Latitude (Opcional)']),
-                    lng: parseFloat(item['Longitude (Opcional)'])
-                };
-            }).filter(i => i.nome);
-
-            render(allData);
-            document.getElementById('loader').style.display = 'none';
-        } catch (e) {
-            console.error(e);
-            alert("Erro ao carregar dados. Verifique se a planilha está 'Publicada na Web'.");
-        }
+                    programas: item['Programa'],
+                    horario: item['Horário de Funcionamento'],
+                    lat: parseFloat(item['Latitude'] ? item['Latitude'].replace(',', '.') : NaN),
+                    lng: parseFloat(item['Longitude'] ? item['Longitude'].replace(',', '.') : NaN)
+                }));
+                render(allData);
+                document.getElementById('loader').style.display = 'none';
+            },
+            error: (err) => {
+                alert("Erro ao conectar. Verifique se a planilha está 'Publicada na Web'.");
+            }
+        });
     }
 
     function render(data) {
@@ -276,7 +268,7 @@
         }
 
         if(currentCategory !== 'Todos') {
-            filtered = filtered.filter(i => i.programas && i.programas.includes(currentCategory));
+            filtered = filtered.filter(i => i.programas && i.programas.toLowerCase().includes(currentCategory.toLowerCase()));
         }
 
         render(filtered);
