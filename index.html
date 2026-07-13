@@ -3,88 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Localizador de Parceiros SEMA - MPDFT</title>
-    
+    <title>Localizador SEMA - MPDFT</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
     <style>
         :root { --primary: #002147; --accent: #e91e63; --bg: #f4f7f6; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-        header { background: var(--primary); color: white; padding: 12px 20px; display: flex; align-items: center; gap: 15px; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        header h1 { font-size: 1.1rem; }
-
+        header { background: var(--primary); color: white; padding: 12px 20px; display: flex; align-items: center; gap: 15px; z-index: 1000; }
         main { flex: 1; display: flex; overflow: hidden; position: relative; }
-
         #sidebar { width: 380px; background: white; display: flex; flex-direction: column; box-shadow: 2px 0 15px rgba(0,0,0,0.1); z-index: 900; transition: 0.3s; }
         .filter-container { padding: 15px; border-bottom: 1px solid #eee; }
-        .filter-title { color: var(--primary); font-size: 1rem; margin-bottom: 12px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
-
         .search-wrapper { position: relative; margin-bottom: 10px; }
         .search-wrapper i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #2196f3; }
         .search-wrapper input { width: 100%; padding: 10px 12px 10px 35px; border: 1px solid #ddd; border-radius: 6px; outline: none; }
-
-        .loc-row { display: flex; gap: 8px; margin-bottom: 10px; }
-        .loc-row input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; outline: none; }
-        .btn-gps { background: var(--accent); color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; }
-
-        .category-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-        .pill { padding: 5px 10px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; cursor: pointer; color: white; opacity: 0.6; transition: 0.2s; }
-        .pill.active { opacity: 1; transform: scale(1.05); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .btn-gps { background: var(--accent); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
+        .category-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+        .pill { padding: 5px 10px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; cursor: pointer; color: white; opacity: 0.6; }
+        .pill.active { opacity: 1; transform: scale(1.05); }
         .p-all { background: #2196f3; } .p-serv { background: #4caf50; } .p-pec { background: #ff9800; } .p-sau { background: #f44336; } .p-pal { background: #9c27b0; }
-
         #results-list { flex: 1; overflow-y: auto; padding: 10px; background: #f9f9f9; }
-        .card { background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; }
+        .card { background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid var(--primary); cursor: pointer; }
         .card h3 { font-size: 0.9rem; color: var(--primary); margin-bottom: 5px; }
-        .card p { font-size: 0.8rem; color: #666; margin-bottom: 3px; }
+        .card p { font-size: 0.8rem; color: #666; }
         .card .dist { color: var(--accent); font-weight: bold; font-size: 0.75rem; margin-top: 5px; }
-        .badge { display: inline-block; background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 10px; font-size: 0.65rem; font-weight: bold; margin-top: 5px; }
-
         #map { flex: 1; z-index: 1; }
-
         .mobile-nav { display: none; background: white; border-top: 1px solid #ddd; height: 60px; }
-        .nav-btn { flex: 1; border: none; background: none; color: #777; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; }
+        .nav-btn { flex: 1; border: none; background: none; color: #777; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
         .nav-btn.active { color: var(--primary); border-top: 3px solid var(--primary); }
-
         @media (max-width: 768px) {
             #sidebar { width: 100%; position: absolute; height: 100%; transform: translateX(-100%); }
             #sidebar.active { transform: translateX(0); }
-            .mobile-nav { display: flex; z-index: 1001; }
+            .mobile-nav { display: flex; }
         }
-
         #loader { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-
-<div id="loader">
-    <div class="spinner"></div>
-    <p style="margin-top:15px; font-weight:bold; color:var(--primary)">Carregando Parceiros...</p>
-</div>
-
-<header>
-    <i class="fas fa-hands-helping fa-lg"></i>
-    <h1>Localizador de Parceiros SEMA</h1>
-</header>
-
+<div id="loader"><div class="spinner"></div><p style="margin-top:15px; font-weight:bold; color:var(--primary)">Carregando...</p></div>
+<header><i class="fas fa-hands-helping fa-lg"></i><h1>Localizador de Parceiros SEMA</h1></header>
 <main>
     <aside id="sidebar">
         <div class="filter-container">
-            <div class="filter-title"><i class="fas fa-filter"></i> Filtros</div>
-            <div class="search-wrapper">
-                <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Busque por qualquer palavra...">
-            </div>
-            <div class="loc-row">
-                <input type="text" id="location-input" placeholder="Endereço ou CEP">
-                <button class="btn-gps" onclick="getLocation()"><i class="fas fa-crosshairs"></i></button>
-            </div>
+            <div class="search-wrapper"><i class="fas fa-search"></i><input type="text" id="search-input" placeholder="Busque por qualquer palavra..."></div>
+            <button class="btn-gps" onclick="getLocation()"><i class="fas fa-crosshairs"></i> USAR MEU GPS</button>
             <div class="category-pills">
                 <div class="pill p-all active" onclick="filterCat('Todos', this)">Todos</div>
                 <div class="pill p-serv" onclick="filterCat('Prestação de serviços', this)">Serviços</div>
@@ -97,21 +63,18 @@
     </aside>
     <div id="map"></div>
 </main>
-
 <nav class="mobile-nav">
-    <button class="nav-btn active" id="btn-map" onclick="toggleView('map')"><i class="fas fa-map-marked-alt fa-lg"></i>Mapa</button>
-    <button class="nav-btn" id="btn-list" onclick="toggleView('list')"><i class="fas fa-list-ul fa-lg"></i>Lista</button>
+    <button class="nav-btn active" id="btn-map" onclick="toggleView('map')">Mapa</button>
+    <button class="nav-btn" id="btn-list" onclick="toggleView('list')">Lista</button>
 </nav>
-
 <script>
     const SHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
-
     let map, markers = [], allData = [], currentCat = 'Todos', userPos = null;
 
     function init() {
         map = L.map('map').setView([-15.7942, -47.8822], 11);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         loadData();
     }
 
@@ -119,38 +82,22 @@
         Papa.parse(CSV_URL, {
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => {
-                allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição']).map(item => ({
-                    nome: item['Nome '] || item['Nome da Instituição'],
-                    endereco: item['Endereço'],
-                    programas: item['Programa'] || item['Programas'],
-                    horario: item['Horário de Funcionamento'] || item['Horário de Funcionamento/Observações'],
-                    lat: parseFloat(item['Latitude']?.replace(',', '.')),
-                    lng: parseFloat(item['Longitude']?.replace(',', '.'))
-                }));
+                allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição']).map(item => {
+                    let lat = parseFloat(String(item['Latitude']).replace(',', '.'));
+                    let lng = parseFloat(String(item['Longitude']).replace(',', '.'));
+                    return {
+                        nome: item['Nome '] || item['Nome da Instituição'],
+                        endereco: item['Endereço'],
+                        programas: item['Programa'] || item['Programas'],
+                        horario: item['Horário de Funcionamento'] || item['Horário de Funcionamento/Observações'],
+                        lat: isNaN(lat) ? null : lat, lng: isNaN(lng) ? null : lng,
+                        raw: JSON.stringify(item).toLowerCase()
+                    };
+                });
                 render(allData);
                 document.getElementById('loader').style.display = 'none';
-                // Geocodificação em segundo plano (não trava a tela)
-                allData.forEach((item, idx) => { if(isNaN(item.lat)) setTimeout(() => geocode(item), idx * 1500); });
             }
         });
-    }
-
-    async function geocode(item) {
-        try {
-            const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(item.endereco + ', DF')}`);
-            const d = await r.json();
-            if(d[0]) { 
-                item.lat = parseFloat(d[0].lat); item.lng = parseFloat(d[0].lon); 
-                addMarker(item);
-            }
-        } catch(e) {}
-    }
-
-    function addMarker(item) {
-        if(!isNaN(item.lat)) {
-            const m = L.marker([item.lat, item.lng]).bindPopup(`<b>${item.nome}</b><br>${item.endereco}`);
-            m.addTo(map); markers.push(m);
-        }
     }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -164,31 +111,29 @@
     function render(data) {
         const listDiv = document.getElementById('results-list');
         listDiv.innerHTML = '';
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
         if (userPos) {
             data.sort((a, b) => {
-                if(isNaN(a.lat) || isNaN(b.lat)) return 0;
+                if(!a.lat || !b.lat) return 1;
                 return calculateDistance(userPos[0], userPos[1], a.lat, a.lng) - calculateDistance(userPos[0], userPos[1], b.lat, b.lng);
             });
         }
         data.forEach(item => {
-            const dist = userPos && !isNaN(item.lat) ? calculateDistance(userPos[0], userPos[1], item.lat, item.lng).toFixed(1) + ' km' : '';
+            const dist = userPos && item.lat ? calculateDistance(userPos[0], userPos[1], item.lat, item.lng).toFixed(1) + ' km' : '';
             const card = document.createElement('div');
             card.className = 'card';
-            card.innerHTML = `
-                <h3>${item.nome}</h3>
-                <p><i class="fas fa-map-marker-alt"></i> ${item.endereco}</p>
-                <p><i class="fas fa-clock"></i> ${item.horario}</p>
-                ${dist ? `<div class="dist"><i class="fas fa-route"></i> a ${dist} de você</div>` : ''}
-                <div class="badge">${item.programas}</div>
-            `;
-            card.onclick = () => { if(!isNaN(item.lat)) { map.setView([item.lat, item.lng], 16); toggleView('map'); } };
+            card.innerHTML = `<h3>${item.nome}</h3><p>${item.endereco}</p>${dist ? `<div class="dist">${dist} de você</div>` : ''}`;
+            card.onclick = () => { if(item.lat) { map.setView([item.lat, item.lng], 16); toggleView('map'); } };
             listDiv.appendChild(card);
-            addMarker(item);
+            if(item.lat) {
+                const m = L.marker([item.lat, item.lng]).bindPopup(`<b>${item.nome}</b>`).addTo(map);
+                markers.push(m);
+            }
         });
     }
 
     document.getElementById('search-input').oninput = applyFilters;
-
     function filterCat(cat, el) {
         currentCat = cat;
         document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
@@ -198,11 +143,7 @@
 
     function applyFilters() {
         const search = document.getElementById('search-input').value.toLowerCase();
-        const filtered = allData.filter(i => {
-            const matchSearch = Object.values(i).some(v => String(v).toLowerCase().includes(search));
-            const matchCat = currentCat === 'Todos' || (i.programas && i.programas.toLowerCase().includes(currentCat.toLowerCase()));
-            return matchSearch && matchCat;
-        });
+        const filtered = allData.filter(i => i.raw.includes(search) && (currentCat === 'Todos' || (i.programas && i.programas.toLowerCase().includes(currentCat.toLowerCase()))));
         render(filtered);
     }
 
@@ -213,17 +154,15 @@
                 map.setView(userPos, 13);
                 L.marker(userPos, {icon: L.divIcon({className:'u', html:'<i class="fas fa-user-circle" style="color:#2196f3;font-size:24px;"></i>'})}).addTo(map);
                 applyFilters();
-            }, () => alert("Ative o GPS."));
+            });
         }
     }
 
     function toggleView(v) {
         const s = document.getElementById('sidebar');
-        const bm = document.getElementById('btn-map'), bl = document.getElementById('btn-list');
-        if(v === 'list') { s.classList.add('active'); bl.classList.add('active'); bm.classList.remove('active'); }
-        else { s.classList.remove('active'); bm.classList.add('active'); bl.classList.remove('active'); }
+        if(v === 'list') s.classList.add('active');
+        else s.classList.remove('active');
     }
-
     window.onload = init;
 </script>
 </body>
