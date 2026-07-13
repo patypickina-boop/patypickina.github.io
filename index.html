@@ -13,12 +13,12 @@
 
     <style>
         :root {
-            --primary: #002147; /* Azul MPDFT */
-            --accent: #e91e63;  /* Rosa GPS */
+            --primary: #002147; /* Azul Marinho MPDFT */
+            --accent: #e91e63;  /* Rosa Botão GPS */
             --bg: #f4f7f6;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
         /* Header */
@@ -37,7 +37,7 @@
         /* Layout */
         main { flex: 1; display: flex; overflow: hidden; position: relative; }
 
-        /* Sidebar (Fiel à Foto) */
+        /* Sidebar */
         #sidebar {
             width: 380px;
             background: white;
@@ -66,7 +66,7 @@
         /* Pills de Categoria (Cores da Foto) */
         .category-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
         .pill {
-            padding: 5px 12px;
+            padding: 6px 12px;
             border-radius: 20px;
             font-size: 0.7rem;
             font-weight: bold;
@@ -75,7 +75,7 @@
             color: white;
             border: 2px solid transparent;
         }
-        .pill.active { transform: scale(1.05); border-color: rgba(0,0,0,0.2); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .pill.active { transform: scale(1.05); border-color: rgba(0,0,0,0.3); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         .pill-all { background: #2196f3; }
         .pill-servicos { background: #4caf50; }
         .pill-pecuniaria { background: #ff9800; }
@@ -89,7 +89,7 @@
             padding: 15px;
             border-radius: 10px;
             margin-bottom: 12px;
-            border-left: 5px solid var(--primary);
+            border-left: 6px solid var(--primary);
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             cursor: pointer;
             transition: 0.2s;
@@ -97,7 +97,8 @@
         .card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .card h3 { font-size: 0.95rem; color: var(--primary); margin-bottom: 6px; }
         .card p { font-size: 0.8rem; color: #555; margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
-        .card .badge { display: inline-block; background: #e3f2fd; color: #1976d2; padding: 3px 8px; border-radius: 10px; font-size: 0.65rem; font-weight: bold; margin-top: 6px; }
+        .card .dist { color: var(--accent); font-weight: bold; font-size: 0.75rem; margin-top: 5px; }
+        .card .badge { display: inline-block; background: #e3f2fd; color: #1976d2; padding: 4px 10px; border-radius: 10px; font-size: 0.65rem; font-weight: bold; margin-top: 6px; }
 
         /* Mapa */
         #map { flex: 1; z-index: 1; }
@@ -138,7 +139,7 @@
             
             <div class="search-wrapper">
                 <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Busque por nome, programa, cidade, CEP...">
+                <input type="text" id="search-input" placeholder="Busque por qualquer palavra do cadastro...">
             </div>
 
             <div class="location-wrapper">
@@ -147,8 +148,8 @@
             </div>
 
             <div class="radius-control">
-                <label>Raio de busca: <span id="radius-val">50</span> km</label>
-                <input type="range" id="radius-range" min="1" max="100" value="50">
+                <label>Raio de busca: <span id="radius-val">Sem limite</span></label>
+                <input type="range" id="radius-range" min="1" max="101" value="101">
             </div>
 
             <div class="category-pills">
@@ -173,16 +174,13 @@
 
 <script>
     const SHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
-    // Link de exportação direta (CSV) - O mais estável contra bloqueios
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
 
-    let map, markers = [], allData = [], currentCategory = 'Todos';
+    let map, markers = [], allData = [], currentCategory = 'Todos', userPos = null;
 
     function init() {
         map = L.map('map').setView([-15.7942, -47.8822], 11);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
         loadData();
     }
 
@@ -191,24 +189,45 @@
             download: true,
             header: true,
             skipEmptyLines: true,
-            complete: (results) => {
-                // Mapeamento corrigido para os nomes reais da sua planilha (incluindo o espaço em "Nome ")
+            complete: async (results) => {
                 allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição']).map(item => ({
                     nome: item['Nome '] || item['Nome da Instituição'],
                     endereco: item['Endereço'],
                     cep: item['CEP'],
-                    programas: item['Programa'],
-                    horario: item['Horário de Funcionamento'],
-                    lat: parseFloat(item['Latitude'] ? item['Latitude'].replace(',', '.') : NaN),
-                    lng: parseFloat(item['Longitude'] ? item['Longitude'].replace(',', '.') : NaN)
+                    programas: item['Programa'] || item['Programas'],
+                    horario: item['Horário de Funcionamento'] || item['Horário de Funcionamento/Observações'],
+                    lat: parseFloat(item['Latitude']?.replace(',', '.')),
+                    lng: parseFloat(item['Longitude']?.replace(',', '.'))
                 }));
-                render(allData);
+                
+                // Geocodificação automática para quem não tem Lat/Lng
+                for (let item of allData) {
+                    if (isNaN(item.lat)) await geocode(item);
+                }
+
+                applyFilters();
                 document.getElementById('loader').style.display = 'none';
-            },
-            error: (err) => {
-                alert("Erro ao conectar. Verifique se a planilha está 'Publicada na Web'.");
             }
         });
+    }
+
+    async function geocode(item) {
+        try {
+            const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(item.endereco + ', Brasília, DF')}`);
+            const data = await resp.json();
+            if (data[0]) {
+                item.lat = parseFloat(data[0].lat);
+                item.lng = parseFloat(data[0].lon);
+            }
+        } catch (e) {}
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
     function render(data) {
@@ -217,16 +236,26 @@
         markers.forEach(m => map.removeLayer(m));
         markers = [];
 
+        // Ordenar por distância se o usuário tiver localização
+        if (userPos) {
+            data.sort((a, b) => {
+                const distA = calculateDistance(userPos[0], userPos[1], a.lat, a.lng);
+                const distB = calculateDistance(userPos[0], userPos[1], b.lat, b.lng);
+                return distA - distB;
+            });
+        }
+
         data.forEach(item => {
+            const dist = userPos ? calculateDistance(userPos[0], userPos[1], item.lat, item.lng).toFixed(1) + ' km' : '';
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
                 <h3>${item.nome}</h3>
                 <p><i class="fas fa-map-marker-alt"></i> ${item.endereco}</p>
                 <p><i class="fas fa-clock"></i> ${item.horario}</p>
+                ${dist ? `<div class="dist"><i class="fas fa-route"></i> a ${dist} de você</div>` : ''}
                 <div class="badge">${item.programas}</div>
             `;
-            
             card.onclick = () => {
                 if(!isNaN(item.lat)) {
                     map.setView([item.lat, item.lng], 16);
@@ -236,9 +265,7 @@
             listDiv.appendChild(card);
 
             if(!isNaN(item.lat)) {
-                const m = L.marker([item.lat, item.lng])
-                    .bindPopup(`<b>${item.nome}</b><br>${item.endereco}`)
-                    .addTo(map);
+                const m = L.marker([item.lat, item.lng]).bindPopup(`<b>${item.nome}</b><br>${item.endereco}`).addTo(map);
                 markers.push(m);
             }
         });
@@ -246,7 +273,8 @@
 
     document.getElementById('search-input').oninput = applyFilters;
     document.getElementById('radius-range').oninput = (e) => {
-        document.getElementById('radius-val').innerText = e.target.value;
+        const val = e.target.value;
+        document.getElementById('radius-val').innerText = val > 100 ? "Sem limite" : val + " km";
         applyFilters();
     };
 
@@ -259,19 +287,30 @@
 
     function applyFilters() {
         const search = document.getElementById('search-input').value.toLowerCase();
-        let filtered = allData;
+        const radius = parseInt(document.getElementById('radius-range').value);
         
-        if(search) {
-            filtered = filtered.filter(i => 
-                Object.values(i).some(v => String(v).toLowerCase().includes(search))
-            );
-        }
-
-        if(currentCategory !== 'Todos') {
-            filtered = filtered.filter(i => i.programas && i.programas.toLowerCase().includes(currentCategory.toLowerCase()));
-        }
+        let filtered = allData.filter(i => {
+            const matchSearch = Object.values(i).some(v => String(v).toLowerCase().includes(search));
+            const matchCat = currentCategory === 'Todos' || (i.programas && i.programas.toLowerCase().includes(currentCategory.toLowerCase()));
+            let matchRadius = true;
+            if (userPos && radius <= 100) {
+                matchRadius = calculateDistance(userPos[0], userPos[1], i.lat, i.lng) <= radius;
+            }
+            return matchSearch && matchCat && matchRadius;
+        });
 
         render(filtered);
+    }
+
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(p => {
+                userPos = [p.coords.latitude, p.coords.longitude];
+                map.setView(userPos, 13);
+                L.marker(userPos, {icon: L.divIcon({className: 'u-loc', html: '<i class="fas fa-user-circle" style="color:#2196f3; font-size:24px;"></i>'})}).addTo(map);
+                applyFilters();
+            }, () => alert("Ative o GPS do seu aparelho."));
+        }
     }
 
     function toggleView(view) {
@@ -284,16 +323,6 @@
         } else {
             sidebar.classList.remove('active');
             btnMap.classList.add('active'); btnList.classList.remove('active');
-        }
-    }
-
-    function getLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(p => {
-                const pos = [p.coords.latitude, p.coords.longitude];
-                map.setView(pos, 13);
-                L.marker(pos, {icon: L.divIcon({className: 'u-loc', html: '<i class="fas fa-user-circle" style="color:#2196f3; font-size:24px;"></i>'})}).addTo(map);
-            });
         }
     }
 
