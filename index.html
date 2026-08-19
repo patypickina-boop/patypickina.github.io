@@ -143,7 +143,7 @@
         <div class="filter-container">
             <div class="filter-title"><i class="fas fa-filter"></i> Filtros</div>
             
-            <div class="input-group">
+            <div class="search-wrapper">
                 <i class="fas fa-search"></i>
                 <input type="text" id="search-input" placeholder="Busque por nome, programa, cidade...">
             </div>
@@ -234,6 +234,7 @@
         markers.forEach(m => map.removeLayer(m));
         markers = [];
 
+        // Ordenação por proximidade (Sempre ativa se houver localização)
         if (userPos) {
             data.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
@@ -255,9 +256,17 @@
                 ${dist ? `<span class="dist"><i class="fas fa-route"></i> a ${dist} de você</span>` : ''}
                 <span class="view-map">📍 Ver no Mapa</span>
             `;
-            card.onclick = () => { if(item.lat) { map.setView([item.lat, item.lng], 16); toggleView('map'); } };
+            
+            // Ação de Zoom ao clicar
+            card.onclick = () => { 
+                if(item.lat) { 
+                    map.flyTo([item.lat, item.lng], 16, { duration: 1.5 }); 
+                    toggleView('map'); 
+                } 
+            };
             listDiv.appendChild(card);
 
+            // Adiciona Pinos no Mapa
             if(item.lat) {
                 const m = L.marker([item.lat, item.lng]).bindPopup(`<b>${item.nome}</b><br>${item.endereco}`).addTo(map);
                 markers.push(m);
