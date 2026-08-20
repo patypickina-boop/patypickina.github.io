@@ -46,9 +46,9 @@
         .filter-container { padding: 20px; border-bottom: 1px solid #eee; }
         .filter-title { color: var(--primary); font-size: 1.1rem; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-weight: bold; }
 
-        .search-wrapper { position: relative; margin-bottom: 12px; }
-        .search-wrapper i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #2196f3; }
-        .search-wrapper input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 0.9rem; }
+        .input-group { position: relative; margin-bottom: 12px; }
+        .input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #2196f3; }
+        .input-group input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 0.9rem; }
 
         .loc-row { display: flex; gap: 8px; margin-bottom: 12px; }
         .loc-row input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
@@ -57,10 +57,6 @@
         .btn-row { display: flex; gap: 8px; margin-bottom: 15px; }
         .btn-gps { flex: 1; background: var(--accent); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-clear { background: #eee; color: #666; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-
-        .radius-control { margin-bottom: 20px; }
-        .radius-control label { font-size: 0.85rem; color: #666; display: block; margin-bottom: 8px; font-weight: bold; }
-        .radius-control input { width: 100%; accent-color: var(--primary); }
 
         .category-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
         .pill {
@@ -97,7 +93,7 @@
         .card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
         .card h3 { font-size: 1rem; color: var(--primary); margin-bottom: 10px; line-height: 1.3; }
         .card p { font-size: 0.85rem; color: #555; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-        .card .dist { color: var(--accent); font-weight: bold; font-size: 0.8rem; margin-top: 8px; display: block; }
+        .card .dist { color: var(--accent); font-weight: bold; font-size: 0.85rem; margin-top: 8px; display: block; background: #fff0f3; padding: 4px 8px; border-radius: 6px; width: fit-content; }
         .card .view-map { color: #2196f3; font-weight: bold; font-size: 0.8rem; margin-top: 10px; display: inline-block; }
 
         #map { flex: 1; z-index: 1; }
@@ -134,7 +130,7 @@
         <div class="filter-container">
             <div class="filter-title"><i class="fas fa-filter"></i> Filtros</div>
             
-            <div class="search-wrapper">
+            <div class="input-group">
                 <i class="fas fa-search"></i>
                 <input type="text" id="search-input" placeholder="Busca global (nome, endereço, programa...)">
             </div>
@@ -147,11 +143,6 @@
             <div class="btn-row">
                 <button class="btn-gps" onclick="getLocation()"><i class="fas fa-crosshairs"></i> GPS</button>
                 <button class="btn-clear" onclick="clearFilters()">Limpar</button>
-            </div>
-
-            <div class="radius-control">
-                <label>Raio: <span id="radius-val">100</span> km</label>
-                <input type="range" id="radius-range" min="1" max="100" value="100">
             </div>
 
             <div class="category-pills">
@@ -236,7 +227,7 @@
         document.getElementById('counter-text').innerText = `${data.length} instituições encontradas`;
 
         data.forEach(item => {
-            const dist = userPos && item.lat ? calculateDistance(userPos[0], userPos[1], item.lat, item.lng).toFixed(1) + ' km' : '';
+            const dist = userPos && item.lat ? calculateDistance(userPos[0], userPos[1], item.lat, item.lng).toFixed(1) + ' km' : null;
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
@@ -244,7 +235,7 @@
                 <p><i class="fas fa-map-marker-alt"></i> ${item.endereco}</p>
                 <p><i class="fas fa-envelope"></i> CEP: ${item.cep}</p>
                 <p><i class="fas fa-clock"></i> ${item.horario}</p>
-                ${dist ? `<span class="dist"><i class="fas fa-route"></i> a ${dist} de você</span>` : ''}
+                ${dist ? `<span class="dist"><i class="fas fa-route"></i> a ${dist} km de você</span>` : ''}
                 <span class="view-map">📍 Ver no Mapa</span>
             `;
             
@@ -264,10 +255,6 @@
     }
 
     document.getElementById('search-input').oninput = applyFilters;
-    document.getElementById('radius-range').oninput = (e) => {
-        document.getElementById('radius-val').innerText = e.target.value;
-        applyFilters();
-    };
 
     function filterCategory(cat, el) {
         currentCategory = cat;
@@ -278,16 +265,11 @@
 
     function applyFilters() {
         const search = document.getElementById('search-input').value.toLowerCase();
-        const radius = parseInt(document.getElementById('radius-range').value);
         
         const filtered = allData.filter(i => {
             const matchSearch = i.raw.includes(search);
             const matchCat = currentCategory === 'Todos' || (i.programas && i.programas.toLowerCase().includes(currentCategory.toLowerCase()));
-            let matchRadius = true;
-            if (userPos && radius < 100 && i.lat) {
-                matchRadius = calculateDistance(userPos[0], userPos[1], i.lat, i.lng) <= radius;
-            }
-            return matchSearch && matchCat && matchRadius;
+            return matchSearch && matchCat;
         });
         render(filtered);
     }
@@ -304,27 +286,25 @@
     }
 
     async function searchCEP() {
-        const cep = document.getElementById('cep-input').value;
+        const cep = document.getElementById('cep-input').value.replace(/\D/g, '');
         if(cep.length < 8) return alert("Digite um CEP válido");
         try {
             const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
             const d = await r.json();
             if(d.erro) throw new Error();
-            const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(d.logradouro + ', ' + d.localidade)}`);
+            const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(d.logradouro + ', ' + d.localidade + ', DF')}`);
             const g = await geo.json();
             if(g[0]) {
                 userPos = [parseFloat(g[0].lat), parseFloat(g[0].lon)];
                 map.setView(userPos, 13);
                 applyFilters();
             }
-        } catch(e) { alert("CEP não encontrado"); }
+        } catch(e) { alert("CEP não encontrado ou erro na geolocalização."); }
     }
 
     function clearFilters() {
         document.getElementById('search-input').value = '';
         document.getElementById('cep-input').value = '';
-        document.getElementById('radius-range').value = 100;
-        document.getElementById('radius-val').innerText = '100';
         userPos = null;
         currentCategory = 'Todos';
         document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
