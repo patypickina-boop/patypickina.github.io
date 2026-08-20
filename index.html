@@ -17,7 +17,7 @@
             --accent: #e91e63;  /* Rosa GPS */
             --bg: #f4f7f6;
             --text-grey: #666;
-            --link-red: #a52a2a; /* Cor avermelhada do link */
+            --link-red: #a52a2a;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
@@ -50,7 +50,7 @@
 
         .input-group { position: relative; margin-bottom: 12px; }
         .input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #2196f3; }
-        .input-group input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 0.9rem; }
+        .input-group input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
 
         .loc-row { display: flex; gap: 8px; margin-bottom: 12px; }
         .loc-row input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
@@ -81,7 +81,6 @@
 
         .counter { padding: 15px 20px; font-size: 0.85rem; color: #666; font-weight: bold; background: #f9f9f9; border-bottom: 1px solid #eee; }
 
-        /* Lista de Resultados */
         #results-list { flex: 1; overflow-y: auto; padding: 15px; background: #f9f9f9; }
         .card {
             background: white;
@@ -98,19 +97,15 @@
         .card p { font-size: 0.85rem; color: var(--text-grey); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
         .card p i { color: #999; width: 16px; text-align: center; }
         
-        /* Estilo das Tags no Card */
         .card-tags { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
         .card-tag { padding: 4px 10px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; color: white; }
 
-        /* Rodapé do Card (Link e Distância) */
         .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
         .view-map { color: var(--link-red); font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
         .dist-pill { background: #444; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
 
-        /* Mapa */
         #map { flex: 1; z-index: 1; }
 
-        /* Mobile Nav */
         .mobile-nav { display: none; background: white; border-top: 1px solid #ddd; height: 65px; }
         .nav-btn { flex: 1; border: none; background: none; color: #777; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
         .nav-btn.active { color: var(--primary); border-top: 4px solid var(--primary); }
@@ -121,7 +116,6 @@
             .mobile-nav { display: flex; z-index: 1001; }
         }
 
-        /* Loader */
         #loader { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
         .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -230,7 +224,7 @@
         markers.forEach(m => map.removeLayer(m));
         markers = [];
 
-        // Ordenação por proximidade (Sempre ativa se houver localização)
+        // Ordenação por proximidade
         if (userPos) {
             data.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
@@ -245,10 +239,9 @@
             const card = document.createElement('div');
             card.className = 'card';
             
-            // Lógica de cores das tags no card
             let tagColor = "#2196f3";
-            if(item.programas.includes("serviços")) tagColor = "#4caf50";
-            if(item.programas.includes("pecuniária")) tagColor = "#ff9800";
+            if(item.programas.toLowerCase().includes("serviços")) tagColor = "#4caf50";
+            if(item.programas.toLowerCase().includes("pecuniária")) tagColor = "#ff9800";
 
             card.innerHTML = `
                 <h3>${item.nome}</h3>
