@@ -5,56 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Localizador de Parceiros SEMA - MPDFT</title>
     
+    <!-- Bibliotecas -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
     <style>
-        :root { --primary: #002147; --accent: #e91e63; --bg: #f4f7f6; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        :root {
+            --primary: #002147; /* Azul MPDFT */
+            --accent: #e91e63;  /* Rosa GPS */
+            --bg: #f4f7f6;
+            --text-grey: #666;
+            --link-red: #a52a2a; /* Cor avermelhada do link */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        header { background: var(--primary); color: white; padding: 15px 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.3); z-index: 1000; }
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 15px 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
         header h1 { font-size: 1.3rem; font-weight: 600; }
         header p { font-size: 0.85rem; opacity: 0.9; }
 
         main { flex: 1; display: flex; overflow: hidden; position: relative; }
 
-        #sidebar { width: 400px; background: white; display: flex; flex-direction: column; box-shadow: 2px 0 15px rgba(0,0,0,0.1); z-index: 900; transition: 0.3s; }
+        #sidebar {
+            width: 400px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+            z-index: 900;
+            transition: 0.3s ease;
+        }
+
         .filter-container { padding: 20px; border-bottom: 1px solid #eee; }
         .filter-title { color: var(--primary); font-size: 1.1rem; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-weight: bold; }
 
         .input-group { position: relative; margin-bottom: 12px; }
         .input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #2196f3; }
-        .input-group input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+        .input-group input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 0.9rem; }
 
         .loc-row { display: flex; gap: 8px; margin-bottom: 12px; }
         .loc-row input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
-        .btn-search { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-search { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
 
         .btn-row { display: flex; gap: 8px; margin-bottom: 15px; }
         .btn-gps { flex: 1; background: var(--accent); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-clear { background: #eee; color: #666; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
         .category-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-        .pill { padding: 8px 15px; border-radius: 25px; font-size: 0.75rem; font-weight: bold; cursor: pointer; color: white; opacity: 0.7; transition: 0.2s; }
-        .pill.active { opacity: 1; transform: scale(1.05); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        .pill-all { background: #2196f3; } .pill-servicos { background: #4caf50; } .pill-pecuniaria { background: #ff9800; } .pill-saude { background: #f44336; } .pill-palestras { background: #9c27b0; }
+        .pill {
+            padding: 8px 15px;
+            border-radius: 25px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+            border: 2px solid transparent;
+            opacity: 0.7;
+        }
+        .pill.active { opacity: 1; transform: scale(1.05); border-color: rgba(0,0,0,0.2); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .pill-all { background: #2196f3; }
+        .pill-servicos { background: #4caf50; }
+        .pill-pecuniaria { background: #ff9800; }
+        .pill-saude { background: #f44336; }
+        .pill-palestras { background: #9c27b0; }
 
         .counter { padding: 15px 20px; font-size: 0.85rem; color: #666; font-weight: bold; background: #f9f9f9; border-bottom: 1px solid #eee; }
 
+        /* Lista de Resultados */
         #results-list { flex: 1; overflow-y: auto; padding: 15px; background: #f9f9f9; }
-        .card { background: white; padding: 18px; border-radius: 12px; margin-bottom: 15px; border-left: 6px solid var(--primary); box-shadow: 0 3px 6px rgba(0,0,0,0.05); cursor: pointer; }
-        .card h3 { font-size: 1rem; color: var(--primary); margin-bottom: 8px; }
-        .card p { font-size: 0.85rem; color: #555; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
-        .card .dist { color: var(--accent); font-weight: bold; font-size: 0.85rem; margin-top: 8px; display: block; background: #fff0f3; padding: 4px 8px; border-radius: 6px; width: fit-content; }
-        .card .view-map { color: #2196f3; font-weight: bold; font-size: 0.8rem; margin-top: 10px; display: inline-block; }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+        .card h3 { font-size: 1rem; color: var(--primary); margin-bottom: 12px; line-height: 1.3; font-weight: 700; }
+        .card p { font-size: 0.85rem; color: var(--text-grey); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .card p i { color: #999; width: 16px; text-align: center; }
+        
+        /* Estilo das Tags no Card */
+        .card-tags { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
+        .card-tag { padding: 4px 10px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; color: white; }
 
+        /* Rodapé do Card (Link e Distância) */
+        .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
+        .view-map { color: var(--link-red); font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
+        .dist-pill { background: #444; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+
+        /* Mapa */
         #map { flex: 1; z-index: 1; }
 
+        /* Mobile Nav */
         .mobile-nav { display: none; background: white; border-top: 1px solid #ddd; height: 65px; }
-        .nav-btn { flex: 1; border: none; background: none; color: #777; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+        .nav-btn { flex: 1; border: none; background: none; color: #777; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
         .nav-btn.active { color: var(--primary); border-top: 4px solid var(--primary); }
 
         @media (max-width: 768px) {
@@ -63,6 +121,7 @@
             .mobile-nav { display: flex; z-index: 1001; }
         }
 
+        /* Loader */
         #loader { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
         .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -84,29 +143,35 @@
     <aside id="sidebar">
         <div class="filter-container">
             <div class="filter-title"><i class="fas fa-filter"></i> Filtros</div>
+            
             <div class="input-group">
                 <i class="fas fa-search"></i>
                 <input type="text" id="search-input" placeholder="Busca global (nome, endereço, programa...)">
             </div>
+
             <div class="loc-row">
                 <input type="text" id="cep-input" placeholder="Digite seu CEP">
                 <button class="btn-search" onclick="searchCEP()">Buscar</button>
             </div>
+
             <div class="btn-row">
                 <button class="btn-gps" onclick="getLocation()"><i class="fas fa-crosshairs"></i> GPS</button>
                 <button class="btn-clear" onclick="clearFilters()">Limpar</button>
             </div>
+
             <div class="category-pills">
                 <div class="pill pill-all active" onclick="filterCategory('Todos', this)">Todos</div>
-                <div class="pill pill-servicos" onclick="filterCategory('Prestação de serviços', this)">Serviços</div>
-                <div class="pill pill-pecuniaria" onclick="filterCategory('Prestação  pecuniária', this)">Pecuniária</div>
-                <div class="pill pill-saude" onclick="filterCategory('Programa de saúde', this)">Saúde</div>
+                <div class="pill pill-servicos" onclick="filterCategory('Prestação de serviços', this)">Prestação de Serviços</div>
+                <div class="pill pill-pecuniaria" onclick="filterCategory('Prestação  pecuniária', this)">Prestação Pecuniária</div>
+                <div class="pill pill-saude" onclick="filterCategory('Programa de saúde', this)">Programa de Saúde</div>
                 <div class="pill pill-palestras" onclick="filterCategory('Palestras', this)">Palestras</div>
             </div>
         </div>
-        <div class="counter" id="counter-text">Carregando...</div>
+
+        <div class="counter" id="counter-text">Carregando instituições...</div>
         <div id="results-list"></div>
     </aside>
+
     <div id="map"></div>
 </main>
 
@@ -165,6 +230,7 @@
         markers.forEach(m => map.removeLayer(m));
         markers = [];
 
+        // Ordenação por proximidade (Sempre ativa se houver localização)
         if (userPos) {
             data.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
@@ -175,21 +241,32 @@
         document.getElementById('counter-text').innerText = `${data.length} instituições encontradas`;
 
         data.forEach(item => {
-            const dist = userPos && item.lat ? calculateDistance(userPos[0], userPos[1], item.lat, item.lng).toFixed(1) + ' km' : null;
+            const dist = userPos && item.lat ? calculateDistance(userPos[0], userPos[1], item.lat, item.lng).toFixed(1) : null;
             const card = document.createElement('div');
             card.className = 'card';
+            
+            // Lógica de cores das tags no card
+            let tagColor = "#2196f3";
+            if(item.programas.includes("serviços")) tagColor = "#4caf50";
+            if(item.programas.includes("pecuniária")) tagColor = "#ff9800";
+
             card.innerHTML = `
                 <h3>${item.nome}</h3>
                 <p><i class="fas fa-map-marker-alt"></i> ${item.endereco}</p>
                 <p><i class="fas fa-envelope"></i> CEP: ${item.cep}</p>
                 <p><i class="fas fa-clock"></i> ${item.horario}</p>
-                ${dist ? `<span class="dist"><i class="fas fa-route"></i> a ${dist} km de você</span>` : ''}
-                <span class="view-map">📍 Ver no Mapa</span>
+                <div class="card-tags">
+                    <span class="card-tag" style="background:${tagColor}">${item.programas}</span>
+                </div>
+                <div class="card-footer">
+                    <span class="view-map"><i class="fas fa-map"></i><i class="fas fa-map-marker-alt"></i> Ver no Mapa</span>
+                    ${dist ? `<div class="dist-pill"><i class="fas fa-map-marker-alt"></i> ${dist} km</div>` : ''}
+                </div>
             `;
             
             card.onclick = () => { 
                 if(item.lat) { 
-                    map.flyTo([item.lat, item.lng], 16, { duration: 1.5 }); 
+                    map.flyTo([item.lat, item.lng], 17, { duration: 1.5 }); 
                     toggleView('map'); 
                 } 
             };
@@ -213,6 +290,7 @@
 
     function applyFilters() {
         const search = document.getElementById('search-input').value.toLowerCase();
+        
         const filtered = allData.filter(i => {
             const matchSearch = i.raw.includes(search);
             const matchCat = currentCategory === 'Todos' || (i.programas && i.programas.toLowerCase().includes(currentCategory.toLowerCase()));
