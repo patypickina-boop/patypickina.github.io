@@ -18,6 +18,7 @@
             --bg: #f4f7f6;
             --text-grey: #666;
             --link-red: #a52a2a;
+            --dist-bg: #444;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
@@ -62,15 +63,8 @@
 
         .category-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
         .pill {
-            padding: 8px 15px;
-            border-radius: 25px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-            color: white;
-            border: 2px solid transparent;
-            opacity: 0.7;
+            padding: 8px 15px; border-radius: 25px; font-size: 0.75rem; font-weight: bold;
+            cursor: pointer; transition: 0.2s; color: white; border: 2px solid transparent; opacity: 0.7;
         }
         .pill.active { opacity: 1; transform: scale(1.05); border-color: rgba(0,0,0,0.2); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         .pill-all { background: #2196f3; }
@@ -83,26 +77,17 @@
 
         #results-list { flex: 1; overflow-y: auto; padding: 15px; background: #f9f9f9; }
         .card {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
-            cursor: pointer;
-            transition: 0.2s;
-            position: relative;
+            background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s;
         }
         .card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
-        .card h3 { font-size: 1rem; color: var(--primary); margin-bottom: 12px; line-height: 1.3; font-weight: 700; }
+        .card h3 { font-size: 1rem; color: var(--primary); margin-bottom: 12px; font-weight: 700; }
         .card p { font-size: 0.85rem; color: var(--text-grey); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
         .card p i { color: #999; width: 16px; text-align: center; }
         
-        .card-tags { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
-        .card-tag { padding: 4px 10px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; color: white; }
-
         .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
         .view-map { color: var(--link-red); font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
-        .dist-pill { background: #444; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        .dist-pill { background: var(--dist-bg); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
 
         #map { flex: 1; z-index: 1; }
 
@@ -137,22 +122,18 @@
     <aside id="sidebar">
         <div class="filter-container">
             <div class="filter-title"><i class="fas fa-filter"></i> Filtros</div>
-            
             <div class="input-group">
                 <i class="fas fa-search"></i>
                 <input type="text" id="search-input" placeholder="Busca global (nome, endereço, programa...)">
             </div>
-
             <div class="loc-row">
                 <input type="text" id="cep-input" placeholder="Digite seu CEP">
                 <button class="btn-search" onclick="searchCEP()">Buscar</button>
             </div>
-
             <div class="btn-row">
                 <button class="btn-gps" onclick="getLocation()"><i class="fas fa-crosshairs"></i> GPS</button>
                 <button class="btn-clear" onclick="clearFilters()">Limpar</button>
             </div>
-
             <div class="category-pills">
                 <div class="pill pill-all active" onclick="filterCategory('Todos', this)">Todos</div>
                 <div class="pill pill-servicos" onclick="filterCategory('Prestação de serviços', this)">Prestação de Serviços</div>
@@ -161,11 +142,9 @@
                 <div class="pill pill-palestras" onclick="filterCategory('Palestras', this)">Palestras</div>
             </div>
         </div>
-
-        <div class="counter" id="counter-text">Carregando instituições...</div>
+        <div class="counter" id="counter-text">Carregando...</div>
         <div id="results-list"></div>
     </aside>
-
     <div id="map"></div>
 </main>
 
@@ -191,8 +170,12 @@
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => {
                 allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição']).map(item => {
-                    let lat = parseFloat(String(item['Latitude']).replace(',', '.'));
-                    let lng = parseFloat(String(item['Longitude']).replace(',', '.'));
+                    // Limpeza de coordenadas (trata vírgula e erros de conexão)
+                    let latStr = String(item['Latitude'] || "").replace(',', '.');
+                    let lngStr = String(item['Longitude'] || "").replace(',', '.');
+                    let lat = parseFloat(latStr);
+                    let lng = parseFloat(lngStr);
+                    
                     return {
                         nome: item['Nome '] || item['Nome da Instituição'],
                         endereco: item['Endereço'],
@@ -212,9 +195,9 @@
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371;
-        const dLat = (lat2-lat1) * Math.PI/180;
-        const dLon = (lon2-lon1) * Math.PI/180;
-        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
@@ -224,7 +207,7 @@
         markers.forEach(m => map.removeLayer(m));
         markers = [];
 
-        // Ordenação por proximidade
+        // ORDENAÇÃO POR DISTÂNCIA (Sempre que houver localização)
         if (userPos) {
             data.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
@@ -239,30 +222,20 @@
             const card = document.createElement('div');
             card.className = 'card';
             
-            let tagColor = "#2196f3";
-            if(item.programas.toLowerCase().includes("serviços")) tagColor = "#4caf50";
-            if(item.programas.toLowerCase().includes("pecuniária")) tagColor = "#ff9800";
-
             card.innerHTML = `
                 <h3>${item.nome}</h3>
                 <p><i class="fas fa-map-marker-alt"></i> ${item.endereco}</p>
                 <p><i class="fas fa-envelope"></i> CEP: ${item.cep}</p>
                 <p><i class="fas fa-clock"></i> ${item.horario}</p>
-                <div class="card-tags">
-                    <span class="card-tag" style="background:${tagColor}">${item.programas}</span>
-                </div>
                 <div class="card-footer">
-                    <span class="view-map"><i class="fas fa-map"></i><i class="fas fa-map-marker-alt"></i> Ver no Mapa</span>
+                    <span class="view-map" onclick="zoomTo(${item.lat}, ${item.lng}, event)">
+                        <i class="fas fa-map"></i><i class="fas fa-map-marker-alt"></i> Ver no Mapa
+                    </span>
                     ${dist ? `<div class="dist-pill"><i class="fas fa-map-marker-alt"></i> ${dist} km</div>` : ''}
                 </div>
             `;
             
-            card.onclick = () => { 
-                if(item.lat) { 
-                    map.flyTo([item.lat, item.lng], 17, { duration: 1.5 }); 
-                    toggleView('map'); 
-                } 
-            };
+            card.onclick = () => zoomTo(item.lat, item.lng);
             listDiv.appendChild(card);
 
             if(item.lat) {
@@ -270,6 +243,14 @@
                 markers.push(m);
             }
         });
+    }
+
+    function zoomTo(lat, lng, e) {
+        if(e) e.stopPropagation();
+        if(lat && lng) {
+            map.flyTo([lat, lng], 18, { duration: 1.5 });
+            if(window.innerWidth < 768) toggleView('map');
+        }
     }
 
     document.getElementById('search-input').oninput = applyFilters;
@@ -283,7 +264,6 @@
 
     function applyFilters() {
         const search = document.getElementById('search-input').value.toLowerCase();
-        
         const filtered = allData.filter(i => {
             const matchSearch = i.raw.includes(search);
             const matchCat = currentCategory === 'Todos' || (i.programas && i.programas.toLowerCase().includes(currentCategory.toLowerCase()));
