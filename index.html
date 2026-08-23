@@ -202,7 +202,7 @@
         const R = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
@@ -306,14 +306,15 @@
     }
 
     async function searchCEP() {
-        const cep = document.getElementById('cep-input').value.replace(/\D/g, '');
-        if(cep.length < 8) return alert("Digite um CEP válido");
+        const cepInput = document.getElementById('cep-input').value.replace(/\D/g, '');
+        if(cepInput.length < 8) return alert("Digite um CEP válido com 8 números.");
+        
         try {
-            const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const r = await fetch(`https://viacep.com.br/ws/${cepInput}/json/`);
             const d = await r.json();
-            if(d.erro) throw new Error();
-            
-            // Estratégia de busca múltipla para Brasília
+            if(d.erro) throw new Error("CEP não encontrado");
+
+            // Estratégia de busca múltipla para Brasília e Satélites
             const queries = [
                 `${d.logradouro}, ${d.bairro}, ${d.localidade}, DF, Brasil`,
                 `${d.cep}, Brasil`,
@@ -321,17 +322,31 @@
             ];
 
             for (let q of queries) {
-                const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
+                const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
                 const g = await geo.json();
-                if(g[0]) {
+                if(g && g.length > 0) {
                     userPos = [parseFloat(g[0].lat), parseFloat(g[0].lon)];
-                    map.setView(userPos, 14);
+                    map.flyTo(userPos, 14);
+                    
+                    // Marcador da busca
+                    if(window.searchMarker) map.removeLayer(window.searchMarker);
+                    window.searchMarker = L.marker(userPos, {
+                        icon: L.divIcon({
+                            className: 'custom-div-icon',
+                            html: "<div style='background-color:#e91e63; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);'></div>",
+                            iconSize: [12, 12],
+                            iconAnchor: [6, 6]
+                        })
+                    }).addTo(map).bindPopup("Local da busca: " + (d.logradouro || d.bairro)).openPopup();
+                    
                     applyFilters();
                     return;
                 }
             }
-            alert("CEP localizado, mas não conseguimos marcar no mapa. Tente o GPS.");
-        } catch(e) { alert("CEP não encontrado."); }
+            alert("Endereço do CEP localizado, mas não conseguimos marcar no mapa. Tente o botão GPS.");
+        } catch(e) { 
+            alert("Erro ao buscar CEP. Verifique o número digitado."); 
+        }
     }
 
     function clearFilters() {
@@ -341,6 +356,7 @@
         currentCategory = 'Todos';
         document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
         document.querySelector('.pill-all').classList.add('active');
+        if(window.searchMarker) map.removeLayer(window.searchMarker);
         applyFilters();
     }
 
