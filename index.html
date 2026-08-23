@@ -97,7 +97,7 @@
 
         .mobile-nav { display: none; background: white; border-top: 1px solid #ddd; height: 65px; }
         .nav-btn { flex: 1; border: none; background: none; color: #777; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
-        .nav-btn.active { color: var(--primary); border-top: 3px solid var(--primary); }
+        .nav-btn.active { color: var(--primary); border-top: 4px solid var(--primary); }
 
         @media (max-width: 768px) {
             #sidebar { width: 100%; position: absolute; height: 100%; transform: translateX(-100%); }
@@ -319,8 +319,9 @@
             if(d.erro) throw new Error("CEP não encontrado");
 
             // TRAVA GEOGRÁFICA: Força a busca apenas dentro do Distrito Federal
+            // Bounding Box do DF: -48.28, -16.05 (Sudoeste) até -47.30, -15.45 (Nordeste)
             const query = `${d.cep}, Brasil`;
-            const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=-48.28,-16.05,-47.30,-15.45&bounded=1&limit=1`;
+            const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=-48.28,-15.45,-47.30,-16.05&bounded=1&limit=1`;
             
             const geo = await fetch(geoUrl);
             const g = await geo.json();
