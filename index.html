@@ -180,8 +180,12 @@
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => {
                 allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição']).map(item => {
-                    let lat = parseFloat(String(item['Latitude'] || "").replace(',', '.'));
-                    let lng = parseFloat(String(item['Longitude'] || "").replace(',', '.'));
+                    // Limpeza rigorosa de coordenadas
+                    let latRaw = String(item['Latitude'] || "").replace(',', '.').trim();
+                    let lngRaw = String(item['Longitude'] || "").replace(',', '.').trim();
+                    let lat = parseFloat(latRaw);
+                    let lng = parseFloat(lngRaw);
+                    
                     return {
                         nome: item['Nome '] || item['Nome da Instituição'],
                         endereco: item['Endereço'],
@@ -213,7 +217,7 @@
         markers.forEach(m => map.removeLayer(m));
         markers = [];
 
-        // Ordenação por proximidade (Sempre ativa se houver localização)
+        // ORDENAÇÃO POR DISTÂNCIA (Sempre que houver localização)
         if (userPos) {
             data.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
@@ -316,35 +320,42 @@
             const d = await r.json();
             if(d.erro) throw new Error("CEP não encontrado");
 
-            // Estratégia de busca múltipla para Brasília e Satélites
-            const queries = [
-                `${d.logradouro}, ${d.bairro}, ${d.localidade}, DF, Brasil`,
-                `${d.cep}, Brasil`,
-                `${d.bairro}, ${d.localidade}, DF, Brasil`
-            ];
-
-            for (let q of queries) {
-                const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
-                const g = await geo.json();
-                if(g && g.length > 0) {
-                    userPos = [parseFloat(g[0].lat), parseFloat(g[0].lon)];
+            // ESTRATÉGIA DF-PRO: Força a busca dentro do Distrito Federal
+            // Bounding Box do DF: -48.28, -16.05 (Sudoeste) até -47.30, -15.45 (Nordeste)
+            const query = `${d.cep}, Brasil`;
+            const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=-48.28,-16.05,-47.30,-15.45&bounded=1&limit=1`;
+            
+            const geo = await fetch(geoUrl);
+            const g = await geo.json();
+            
+            if(g && g.length > 0) {
+                userPos = [parseFloat(g[0].lat), parseFloat(g[0].lon)];
+                map.flyTo(userPos, 14);
+                
+                if(window.searchMarker) map.removeLayer(window.searchMarker);
+                window.searchMarker = L.marker(userPos, {
+                    icon: L.divIcon({
+                        className: 'custom-div-icon',
+                        html: "<div style='background-color:#e91e63; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);'></div>",
+                        iconSize: [12, 12],
+                        iconAnchor: [6, 6]
+                    })
+                }).addTo(map).bindPopup("Local da busca: " + (d.logradouro || d.bairro)).openPopup();
+                
+                applyFilters();
+            } else {
+                // Fallback caso a busca por CEP falhe, tenta por endereço textual no DF
+                const queryText = `${d.logradouro}, ${d.bairro}, ${d.localidade}, DF, Brasil`;
+                const geoFallback = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText)}&limit=1`);
+                const gF = await geoFallback.json();
+                if(gF && gF.length > 0) {
+                    userPos = [parseFloat(gF[0].lat), parseFloat(gF[0].lon)];
                     map.flyTo(userPos, 14);
-                    
-                    if(window.searchMarker) map.removeLayer(window.searchMarker);
-                    window.searchMarker = L.marker(userPos, {
-                        icon: L.divIcon({
-                            className: 'custom-div-icon',
-                            html: "<div style='background-color:#e91e63; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);'></div>",
-                            iconSize: [12, 12],
-                            iconAnchor: [6, 6]
-                        })
-                    }).addTo(map).bindPopup("Local da busca: " + (d.logradouro || d.bairro)).openPopup();
-                    
                     applyFilters();
-                    return;
+                } else {
+                    alert("CEP localizado, mas não conseguimos marcar no mapa do DF. Tente o botão GPS.");
                 }
             }
-            alert("Endereço do CEP localizado, mas não conseguimos marcar no mapa. Tente o botão GPS.");
         } catch(e) { 
             alert("Erro ao buscar CEP. Verifique o número digitado."); 
         }
