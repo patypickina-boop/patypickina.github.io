@@ -75,7 +75,6 @@
 
         .counter { padding: 15px 20px; font-size: 0.85rem; color: #666; font-weight: bold; background: #f9f9f9; border-bottom: 1px solid #eee; }
 
-        /* Lista de Resultados */
         #results-list { flex: 1; overflow-y: auto; padding: 15px; background: #f9f9f9; }
         .card {
             background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px;
@@ -86,7 +85,6 @@
         .card p { font-size: 0.85rem; color: var(--text-grey); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
         .card p i { color: #999; width: 16px; text-align: center; }
         
-        /* Estilo das Etiquetas de Programas no Card */
         .card-tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
         .card-tag { padding: 4px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; color: white; }
 
@@ -142,7 +140,7 @@
             <div class="category-pills">
                 <div class="pill pill-all active" onclick="filterCategory('Todos', this)">Todos</div>
                 <div class="pill pill-servicos" onclick="filterCategory('Prestação de serviços', this)">Serviços</div>
-                <div class="pill pill-pecuniaria" onclick="filterCategory('Prestação  pecuniária', this)">Pecuniária</div>
+                <div class="pill pill-pecuniaria" onclick="filterCategory('Prestação Pecuniária', this)">Pecuniária</div>
                 <div class="pill pill-saude" onclick="filterCategory('Programa de saúde', this)">Saúde</div>
                 <div class="pill pill-palestras" onclick="filterCategory('Palestras', this)">Palestras</div>
             </div>
@@ -198,7 +196,7 @@
         const R = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
@@ -208,6 +206,7 @@
         markers.forEach(m => map.removeLayer(m));
         markers = [];
 
+        // Ordenação por proximidade
         if (userPos) {
             data.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
@@ -222,13 +221,12 @@
             const card = document.createElement('div');
             card.className = 'card';
             
-            // Lógica de cores das etiquetas (badges)
             const progList = item.programas.split(',').map(p => p.trim());
             let tagsHtml = progList.map(p => {
-                let color = "#2196f3"; // Azul padrão
-                if(p.toLowerCase().includes("serviços")) color = "#4caf50"; // Verde
-                if(p.toLowerCase().includes("pecuniária")) color = "#ff9800"; // Laranja
-                if(p.toLowerCase().includes("saúde")) color = "#f44336"; // Vermelho
+                let color = "#2196f3";
+                if(p.toLowerCase().includes("serviços")) color = "#4caf50";
+                if(p.toLowerCase().includes("pecuniária") || p.toLowerCase().includes("bens") || p.toLowerCase().includes("projetos")) color = "#ff9800";
+                if(p.toLowerCase().includes("saúde")) color = "#f44336";
                 return `<span class="card-tag" style="background:${color}">${p}</span>`;
             }).join('');
 
@@ -275,9 +273,21 @@
 
     function applyFilters() {
         const search = document.getElementById('search-input').value.toLowerCase();
+        
         const filtered = allData.filter(i => {
             const matchSearch = i.raw.includes(search);
-            const matchCat = currentCategory === 'Todos' || (i.programas && i.programas.toLowerCase().includes(currentCategory.toLowerCase()));
+            
+            // Lógica especial para o filtro Pecuniária (Pecuniária + Bens + Projetos)
+            let matchCat = false;
+            if (currentCategory === 'Todos') {
+                matchCat = true;
+            } else if (currentCategory === 'Prestação Pecuniária') {
+                const termosPecuniaria = ['pecuniária', 'bens', 'projetos'];
+                matchCat = termosPecuniaria.some(termo => i.programas.toLowerCase().includes(termo));
+            } else {
+                matchCat = i.programas.toLowerCase().includes(currentCategory.toLowerCase());
+            }
+
             return matchSearch && matchCat;
         });
         render(filtered);
@@ -301,12 +311,18 @@
             const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
             const d = await r.json();
             if(d.erro) throw new Error();
-            const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(d.logradouro + ', ' + d.localidade + ', DF')}`);
+            
+            // Busca geográfica aprimorada para Brasília
+            const query = `${d.logradouro}, ${d.bairro}, ${d.localidade}, DF, Brasil`;
+            const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
             const g = await geo.json();
+            
             if(g[0]) {
                 userPos = [parseFloat(g[0].lat), parseFloat(g[0].lon)];
-                map.setView(userPos, 13);
+                map.setView(userPos, 14);
                 applyFilters();
+            } else {
+                alert("CEP localizado, mas não conseguimos marcar no mapa. Tente o GPS.");
             }
         } catch(e) { alert("CEP não encontrado."); }
     }
