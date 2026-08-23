@@ -167,7 +167,7 @@
     const SHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
 
-    let map, markers = [], allData = [], currentCategory = 'Todos', userPos = null;
+    let map, markers = [], allData = [], currentCategory = 'Todos', userPos = null, userMarker = null;
 
     function init() {
         map = L.map('map').setView([-15.7942, -47.8822], 11);
@@ -203,11 +203,26 @@
     }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371.0088; // Raio médio da Terra em km
+        const R = 6371.0088; // Raio geodésico em km
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function updateOriginMarker(pos, label) {
+        userPos = pos;
+        if (userMarker) map.removeLayer(userMarker);
+        userMarker = L.marker(pos, {
+            icon: L.divIcon({
+                className: 'custom-div-icon',
+                html: "<div style='background-color:#e91e63; width:14px; height:12px; border-radius:50%; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.5);'></div>",
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
+            })
+        }).addTo(map).bindPopup("<b>Sua Origem:</b><br>" + label).openPopup();
+        map.flyTo(pos, 14);
+        applyFilters();
     }
 
     function render(data) {
@@ -216,7 +231,6 @@
         markers.forEach(m => map.removeLayer(m));
         markers = [];
 
-        // ORDENAÇÃO POR DISTÂNCIA (Sempre que houver localização)
         if (userPos) {
             data.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
@@ -302,11 +316,8 @@
     function getLocation() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(p => {
-                userPos = [p.coords.latitude, p.coords.longitude];
-                map.setView(userPos, 13);
-                L.marker(userPos, {icon: L.divIcon({className:'u', html:'<i class="fas fa-user-circle" style="color:#2196f3;font-size:24px;"></i>'})}).addTo(map);
-                applyFilters();
-            });
+                updateOriginMarker([p.coords.latitude, p.coords.longitude], "Sua posição via GPS");
+            }, () => alert("Ative o GPS do seu dispositivo."));
         }
     }
 
@@ -319,31 +330,24 @@
             const d = await r.json();
             if(d.erro) throw new Error("CEP não encontrado");
 
-            // TRAVA GEOGRÁFICA: Força a busca apenas dentro do Distrito Federal
-            // Bounding Box do DF: -48.28, -16.05 (Sudoeste) até -47.30, -15.45 (Nordeste)
-            const query = `${d.cep}, Brasil`;
-            const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=-48.28,-15.45,-47.30,-16.05&bounded=1&limit=1`;
+            // BUSCA ESTRUTURADA: Força a busca pelo código postal exato no Distrito Federal
+            const geoUrl = `https://nominatim.openstreetmap.org/search?postalcode=${cepInput}&country=Brazil&state=Distrito+Federal&format=json&limit=1`;
             
             const geo = await fetch(geoUrl);
             const g = await geo.json();
             
             if(g && g.length > 0) {
-                userPos = [parseFloat(g[0].lat), parseFloat(g[0].lon)];
-                map.flyTo(userPos, 14);
-                
-                if(window.searchMarker) map.removeLayer(window.searchMarker);
-                window.searchMarker = L.marker(userPos, {
-                    icon: L.divIcon({
-                        className: 'custom-div-icon',
-                        html: "<div style='background-color:#e91e63; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);'></div>",
-                        iconSize: [12, 12],
-                        iconAnchor: [6, 6]
-                    })
-                }).addTo(map).bindPopup("Local da busca: " + (d.logradouro || d.bairro)).openPopup();
-                
-                applyFilters();
+                updateOriginMarker([parseFloat(g[0].lat), parseFloat(g[0].lon)], "CEP: " + cepInput + " (" + (d.bairro || d.localidade) + ")");
             } else {
-                alert("CEP localizado, mas não conseguimos marcar no mapa do DF. Tente o botão GPS.");
+                // Fallback para busca textual se o postalcode falhar
+                const queryText = `${d.logradouro}, ${d.bairro}, ${d.localidade}, DF, Brasil`;
+                const geoFallback = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText)}&viewbox=-48.28,-16.05,-47.30,-15.45&bounded=1&limit=1`);
+                const gF = await geoFallback.json();
+                if(gF && gF.length > 0) {
+                    updateOriginMarker([parseFloat(gF[0].lat), parseFloat(gF[0].lon)], "CEP: " + cepInput);
+                } else {
+                    alert("CEP localizado, mas não conseguimos marcar no mapa do DF. Tente o botão GPS.");
+                }
             }
         } catch(e) { 
             alert("Erro ao buscar CEP. Verifique o número digitado."); 
@@ -354,10 +358,10 @@
         document.getElementById('search-input').value = '';
         document.getElementById('cep-input').value = '';
         userPos = null;
+        if (userMarker) map.removeLayer(userMarker);
         currentCategory = 'Todos';
         document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
         document.querySelector('.pill-all').classList.add('active');
-        if(window.searchMarker) map.removeLayer(window.searchMarker);
         applyFilters();
     }
 
