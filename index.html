@@ -216,6 +216,7 @@
         markers.forEach(m => map.removeLayer(m));
         markers = [];
 
+        // ORDENAÇÃO POR DISTÂNCIA (Sempre que houver localização)
         if (userPos) {
             data.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
