@@ -125,18 +125,22 @@
     <aside id="sidebar">
         <div class="filter-container">
             <div class="filter-title"><i class="fas fa-filter"></i> Filtros</div>
+            
             <div class="input-group">
                 <i class="fas fa-search"></i>
                 <input type="text" id="search-input" placeholder="Busca global (nome, endereço, programa...)">
             </div>
+
             <div class="loc-row">
                 <input type="text" id="cep-input" placeholder="Digite seu CEP">
                 <button class="btn-search" onclick="searchCEP()">Buscar</button>
             </div>
+
             <div class="btn-row">
                 <button class="btn-gps" onclick="getLocation()"><i class="fas fa-crosshairs"></i> GPS</button>
                 <button class="btn-clear" onclick="clearFilters()">Limpar</button>
             </div>
+
             <div class="category-pills">
                 <div class="pill pill-all active" onclick="filterCategory('Todos', this)">Todos</div>
                 <div class="pill pill-servicos" onclick="filterCategory('Prestação de serviços', this)">Serviços</div>
@@ -145,9 +149,11 @@
                 <div class="pill pill-palestras" onclick="filterCategory('Palestras', this)">Palestras</div>
             </div>
         </div>
-        <div class="counter" id="counter-text">Carregando...</div>
+
+        <div class="counter" id="counter-text">Carregando instituições...</div>
         <div id="results-list"></div>
     </aside>
+
     <div id="map"></div>
 </main>
 
@@ -196,7 +202,7 @@
         const R = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
         return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
@@ -206,7 +212,6 @@
         markers.forEach(m => map.removeLayer(m));
         markers = [];
 
-        // Ordenação por proximidade
         if (userPos) {
             data.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
@@ -273,11 +278,8 @@
 
     function applyFilters() {
         const search = document.getElementById('search-input').value.toLowerCase();
-        
         const filtered = allData.filter(i => {
             const matchSearch = i.raw.includes(search);
-            
-            // Lógica especial para o filtro Pecuniária (Pecuniária + Bens + Projetos)
             let matchCat = false;
             if (currentCategory === 'Todos') {
                 matchCat = true;
@@ -287,7 +289,6 @@
             } else {
                 matchCat = i.programas.toLowerCase().includes(currentCategory.toLowerCase());
             }
-
             return matchSearch && matchCat;
         });
         render(filtered);
@@ -312,18 +313,24 @@
             const d = await r.json();
             if(d.erro) throw new Error();
             
-            // Busca geográfica aprimorada para Brasília
-            const query = `${d.logradouro}, ${d.bairro}, ${d.localidade}, DF, Brasil`;
-            const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
-            const g = await geo.json();
-            
-            if(g[0]) {
-                userPos = [parseFloat(g[0].lat), parseFloat(g[0].lon)];
-                map.setView(userPos, 14);
-                applyFilters();
-            } else {
-                alert("CEP localizado, mas não conseguimos marcar no mapa. Tente o GPS.");
+            // Estratégia de busca múltipla para Brasília
+            const queries = [
+                `${d.logradouro}, ${d.bairro}, ${d.localidade}, DF, Brasil`,
+                `${d.cep}, Brasil`,
+                `${d.bairro}, ${d.localidade}, DF, Brasil`
+            ];
+
+            for (let q of queries) {
+                const geo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
+                const g = await geo.json();
+                if(g[0]) {
+                    userPos = [parseFloat(g[0].lat), parseFloat(g[0].lon)];
+                    map.setView(userPos, 14);
+                    applyFilters();
+                    return;
+                }
             }
+            alert("CEP localizado, mas não conseguimos marcar no mapa. Tente o GPS.");
         } catch(e) { alert("CEP não encontrado."); }
     }
 
