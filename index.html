@@ -97,7 +97,7 @@
 
         .mobile-nav { display: none; background: white; border-top: 1px solid #ddd; height: 65px; }
         .nav-btn { flex: 1; border: none; background: none; color: #777; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
-        .nav-btn.active { color: var(--primary); border-top: 4px solid var(--primary); }
+        .nav-btn.active { color: var(--primary); border-top: 3px solid var(--primary); }
 
         @media (max-width: 768px) {
             #sidebar { width: 100%; position: absolute; height: 100%; transform: translateX(-100%); }
@@ -180,7 +180,6 @@
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => {
                 allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição']).map(item => {
-                    // Limpeza rigorosa de coordenadas
                     let latRaw = String(item['Latitude'] || "").replace(',', '.').trim();
                     let lngRaw = String(item['Longitude'] || "").replace(',', '.').trim();
                     let lat = parseFloat(latRaw);
@@ -204,7 +203,7 @@
     }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371;
+        const R = 6371.0088; // Raio médio da Terra em km
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
@@ -217,7 +216,6 @@
         markers.forEach(m => map.removeLayer(m));
         markers = [];
 
-        // ORDENAÇÃO POR DISTÂNCIA (Sempre que houver localização)
         if (userPos) {
             data.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
@@ -320,8 +318,7 @@
             const d = await r.json();
             if(d.erro) throw new Error("CEP não encontrado");
 
-            // ESTRATÉGIA DF-PRO: Força a busca dentro do Distrito Federal
-            // Bounding Box do DF: -48.28, -16.05 (Sudoeste) até -47.30, -15.45 (Nordeste)
+            // TRAVA GEOGRÁFICA: Força a busca apenas dentro do Distrito Federal
             const query = `${d.cep}, Brasil`;
             const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&viewbox=-48.28,-16.05,-47.30,-15.45&bounded=1&limit=1`;
             
@@ -344,17 +341,7 @@
                 
                 applyFilters();
             } else {
-                // Fallback caso a busca por CEP falhe, tenta por endereço textual no DF
-                const queryText = `${d.logradouro}, ${d.bairro}, ${d.localidade}, DF, Brasil`;
-                const geoFallback = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText)}&limit=1`);
-                const gF = await geoFallback.json();
-                if(gF && gF.length > 0) {
-                    userPos = [parseFloat(gF[0].lat), parseFloat(gF[0].lon)];
-                    map.flyTo(userPos, 14);
-                    applyFilters();
-                } else {
-                    alert("CEP localizado, mas não conseguimos marcar no mapa do DF. Tente o botão GPS.");
-                }
+                alert("CEP localizado, mas não conseguimos marcar no mapa do DF. Tente o botão GPS.");
             }
         } catch(e) { 
             alert("Erro ao buscar CEP. Verifique o número digitado."); 
