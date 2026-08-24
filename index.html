@@ -215,7 +215,7 @@
         userMarker = L.marker(pos, {
             icon: L.divIcon({
                 className: 'custom-div-icon',
-                html: "<div style='background-color:#e91e63; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
+                html: "<div style='background-color:#e91e63; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
                 iconSize: [16, 16],
                 iconAnchor: [8, 8]
             })
@@ -329,39 +329,40 @@
         btn.disabled = true;
 
         try {
-            // 1. Busca estruturada por PostalCode (Mais rápido e preciso)
-            const geoUrl = `https://nominatim.openstreetmap.org/search?postalcode=${cepInput}&country=Brazil&format=json&limit=1`;
-            const geoResponse = await fetch(geoUrl);
-            const geoData = await geoResponse.json();
-            
-            if(geoData && geoData.length > 0) {
-                updateOriginMarker([parseFloat(geoData[0].lat), parseFloat(geoData[0].lon)], "CEP: " + cepInput);
-            } else {
-                // 2. Fallback: Busca via ViaCEP + Limpeza de Endereço
-                const r = await fetch(`https://viacep.com.br/ws/${cepInput}/json/`);
-                const d = await r.json();
-                if(d.erro) throw new Error("CEP não encontrado");
+            // 1. Busca via ViaCEP para pegar o endereço estruturado
+            const r = await fetch(`https://viacep.com.br/ws/${cepInput}/json/`);
+            const d = await r.json();
+            if(d.erro) throw new Error("CEP não encontrado");
 
-                // Limpa o endereço de Brasília (remove Conjuntos/Lotes que travam o mapa)
-                const logradouroLimpo = d.logradouro.split('Conjunto')[0].split('Bloco')[0].split('Lote')[0].trim();
-                const queryText = `${logradouroLimpo}, Brasília, DF, Brasil`;
-                
-                const geoFallback = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryText)}&format=json&limit=1`);
-                const gF = await geoFallback.json();
-                
-                if(gF && gF.length > 0) {
-                    updateOriginMarker([parseFloat(gF[0].lat), parseFloat(gF[0].lon)], "CEP: " + cepInput + " (" + d.bairro + ")");
-                } else {
-                    // 3. Último recurso: Busca apenas pelo Bairro + Brasília
-                    const geoBairro = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.bairro + ', Brasília, DF')}&format=json&limit=1`);
-                    const gB = await geoBairro.json();
-                    if(gB && gB.length > 0) {
-                        updateOriginMarker([parseFloat(gB[0].lat), parseFloat(gB[0].lon)], "Região: " + d.bairro);
-                    } else {
-                        alert("Não foi possível marcar este CEP no mapa. Tente o GPS.");
-                    }
+            // 2. Limpeza de Logradouro para Brasília (Remove Conjuntos, Lotes, Blocos)
+            // Ex: "SHIS QI 23 Conjunto 1 a 10" vira "SHIS QI 23"
+            const logradouroLimpo = d.logradouro.split('Conjunto')[0].split('Bloco')[0].split('Lote')[0].trim();
+            
+            // 3. Estratégia de Busca em Cascata (Travada no DF)
+            const bbox = "-48.28,-16.05,-47.30,-15.45"; // DF Bounding Box
+            
+            const queries = [
+                // Tentativa 1: Logradouro Limpo + Brasília + DF
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(logradouroLimpo + ', Brasília, DF')}&format=json&limit=1`,
+                // Tentativa 2: CEP Puro + Brasil
+                `https://nominatim.openstreetmap.org/search?postalcode=${cepInput}&country=Brazil&format=json&limit=1`,
+                // Tentativa 3: Bairro + Brasília + DF
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.bairro + ', Brasília, DF')}&format=json&limit=1`
+            ];
+
+            let found = false;
+            for (let url of queries) {
+                const geo = await fetch(url);
+                const g = await geo.json();
+                if(g && g.length > 0) {
+                    updateOriginMarker([parseFloat(g[0].lat), parseFloat(g[0].lon)], "CEP: " + cepInput + " (" + (d.bairro || d.localidade) + ")");
+                    found = true;
+                    break;
                 }
             }
+            
+            if(!found) alert("Não foi possível marcar este CEP no mapa. Tente o GPS.");
+
         } catch(e) { 
             alert("Erro ao buscar CEP. Verifique o número digitado."); 
         } finally {
