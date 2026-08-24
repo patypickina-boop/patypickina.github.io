@@ -325,6 +325,10 @@
         const cepInput = document.getElementById('cep-input').value.replace(/\D/g, '');
         if(cepInput.length < 8) return alert("Digite um CEP válido com 8 números.");
         
+        const btn = document.querySelector('.btn-search');
+        btn.innerText = "...";
+        btn.disabled = true;
+
         try {
             const r = await fetch(`https://viacep.com.br/ws/${cepInput}/json/`);
             const d = await r.json();
@@ -334,34 +338,48 @@
             const bbox = "-48.28,-16.05,-47.30,-15.45";
             
             // Limpeza do logradouro para Brasília (remove Conjuntos/Blocos que confundem o mapa)
-            const logradouroLimpo = d.logradouro.split('Conjunto')[0].split('Bloco')[0].trim();
+            const logradouroLimpo = d.logradouro.split('Conjunto')[0].split('Bloco')[0].split('Lote')[0].trim();
 
             // ESTRATÉGIA DE BUSCA EM CASCATA
             const queries = [
                 `https://nominatim.openstreetmap.org/search?postalcode=${cepInput}&country=Brazil&state=Distrito+Federal&format=json&limit=1`,
                 `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(logradouroLimpo + ', ' + d.bairro + ', ' + d.localidade + ', DF')}&viewbox=${bbox}&bounded=1&format=json&limit=1`,
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cepInput + ', Brasil')}&viewbox=${bbox}&bounded=1&format=json&limit=1`
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cepInput + ', Brasil')}&viewbox=${bbox}&bounded=1&format=json&limit=1`,
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.bairro + ', ' + d.localidade + ', DF')}&format=json&limit=1`
             ];
 
+            let found = false;
             for (let url of queries) {
                 const geo = await fetch(url);
                 const g = await geo.json();
                 if(g && g.length > 0) {
-                    updateOriginMarker([parseFloat(g[0].lat), parseFloat(g[0].lon)], "CEP: " + cepInput + " (" + (d.bairro || d.localidade) + ")");
-                    return;
+                    const lat = parseFloat(g[0].lat);
+                    const lon = parseFloat(g[0].lon);
+                    // Validação extra: está dentro do DF?
+                    if (lat >= -16.05 && lat <= -15.45 && lon >= -48.28 && lon <= -47.30) {
+                        updateOriginMarker([lat, lon], "CEP: " + cepInput + " (" + (d.bairro || d.localidade) + ")");
+                        found = true;
+                        break;
+                    }
                 }
             }
             
-            // Fallback final: Se nada funcionar, tenta apenas o Bairro + Brasília
-            const geoFinal = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.bairro + ', Brasília, DF')}&format=json&limit=1`);
-            const gF = await geoFinal.json();
-            if(gF && gF.length > 0) {
-                updateOriginMarker([parseFloat(gF[0].lat), parseFloat(gF[0].lon)], "Região: " + d.bairro);
-            } else {
-                alert("Não foi possível marcar este CEP no mapa do DF. Tente o GPS.");
+            if(!found) {
+                // Fallback final: Se nada funcionar, tenta apenas o Bairro + Brasília
+                const geoFinal = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.bairro + ', Brasília, DF')}&format=json&limit=1`);
+                const gF = await geoFinal.json();
+                if(gF && gF.length > 0) {
+                    updateOriginMarker([parseFloat(gF[0].lat), parseFloat(gF[0].lon)], "Região: " + d.bairro);
+                } else {
+                    alert("Não foi possível marcar este CEP no mapa do DF. Tente o GPS.");
+                }
             }
+
         } catch(e) { 
             alert("Erro ao buscar CEP. Verifique o número digitado."); 
+        } finally {
+            btn.innerText = "Buscar";
+            btn.disabled = false;
         }
     }
 
