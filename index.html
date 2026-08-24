@@ -215,7 +215,7 @@
         userMarker = L.marker(pos, {
             icon: L.divIcon({
                 className: 'custom-div-icon',
-                html: "<div style='background-color:#e91e63; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
+                html: "<div style='background-color:#e91e63; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
                 iconSize: [16, 16],
                 iconAnchor: [8, 8]
             })
@@ -261,7 +261,7 @@
                 <div class="card-tags">${tagsHtml}</div>
                 <div class="card-footer">
                     <span class="view-map" onclick="zoomTo(${item.lat}, ${item.lng}, event)">
-                        <i class="fas fa-map"></i><i class="fas fa-map-marker-alt"></i> Ver no Mapa
+                        <i class="fas fa-location-arrow"></i> Ver no Mapa
                     </span>
                     ${dist ? `<div class="dist-pill">${dist} km</div>` : ''}
                 </div>
@@ -338,15 +338,16 @@
             const logradouroLimpo = d.logradouro.split('Conjunto')[0].split('Bloco')[0].split('Lote')[0].trim();
             
             // 3. Estratégia de Busca em Cascata (Travada no DF)
-            const bbox = "-48.28,-16.05,-47.30,-15.45"; // DF Bounding Box
+            // Bounding Box do DF: lon_min, lat_min, lon_max, lat_max
+            const bbox = "-48.28,-16.05,-47.30,-15.45"; 
             
             const queries = [
-                // Tentativa 1: Logradouro Limpo + Brasília + DF
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(logradouroLimpo + ', Brasília, DF')}&format=json&limit=1`,
-                // Tentativa 2: CEP Puro + Brasil
-                `https://nominatim.openstreetmap.org/search?postalcode=${cepInput}&country=Brazil&format=json&limit=1`,
+                // Tentativa 1: CEP Direto (Mais preciso no OSM)
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cepInput + ', Brasil')}&viewbox=${bbox}&bounded=1&format=json&limit=1`,
+                // Tentativa 2: Logradouro Limpo + Brasília + DF
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(logradouroLimpo + ', Brasília, DF')}&viewbox=${bbox}&bounded=1&format=json&limit=1`,
                 // Tentativa 3: Bairro + Brasília + DF
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.bairro + ', Brasília, DF')}&format=json&limit=1`
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.bairro + ', Brasília, DF')}&viewbox=${bbox}&bounded=1&format=json&limit=1`
             ];
 
             let found = false;
@@ -354,13 +355,18 @@
                 const geo = await fetch(url);
                 const g = await geo.json();
                 if(g && g.length > 0) {
-                    updateOriginMarker([parseFloat(g[0].lat), parseFloat(g[0].lon)], "CEP: " + cepInput + " (" + (d.bairro || d.localidade) + ")");
-                    found = true;
-                    break;
+                    const lat = parseFloat(g[0].lat);
+                    const lon = parseFloat(g[0].lon);
+                    // Validação extra: está dentro do DF?
+                    if (lat >= -16.1 && lat <= -15.4 && lon >= -48.3 && lon <= -47.2) {
+                        updateOriginMarker([lat, lon], "CEP: " + cepInput + " (" + (d.bairro || d.localidade) + ")");
+                        found = true;
+                        break;
+                    }
                 }
             }
             
-            if(!found) alert("Não foi possível marcar este CEP no mapa. Tente o GPS.");
+            if(!found) alert("Não foi possível marcar este CEP no mapa do DF. Tente o GPS.");
 
         } catch(e) { 
             alert("Erro ao buscar CEP. Verifique o número digitado."); 
