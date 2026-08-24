@@ -132,12 +132,12 @@
             </div>
 
             <div class="loc-row">
-                <input type="text" id="cep-input" placeholder="Digite seu CEP">
+                <input type="text" id="cep-input" placeholder="Digite o CEP de busca">
                 <button class="btn-search" onclick="searchCEP()">Buscar</button>
             </div>
 
             <div class="btn-row">
-                <button class="btn-gps" onclick="getLocation()"><i class="fas fa-crosshairs"></i> GPS</button>
+                <button class="btn-gps" onclick="getLocation()"><i class="fas fa-crosshairs"></i> Meu GPS</button>
                 <button class="btn-clear" onclick="clearFilters()">Limpar</button>
             </div>
 
@@ -215,7 +215,7 @@
         userMarker = L.marker(pos, {
             icon: L.divIcon({
                 className: 'custom-div-icon',
-                html: "<div style='background-color:#e91e63; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
+                html: "<div style='background-color:#e91e63; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
                 iconSize: [16, 16],
                 iconAnchor: [8, 8]
             })
@@ -263,7 +263,7 @@
                     <span class="view-map" onclick="zoomTo(${item.lat}, ${item.lng}, event)">
                         <i class="fas fa-map"></i><i class="fas fa-map-marker-alt"></i> Ver no Mapa
                     </span>
-                    ${dist ? `<div class="dist-pill"><i class="fas fa-map-marker-alt"></i> ${dist} km</div>` : ''}
+                    ${dist ? `<div class="dist-pill">${dist} km</div>` : ''}
                 </div>
             `;
             
@@ -335,7 +335,6 @@
             if(d.erro) throw new Error("CEP não encontrado");
 
             // 2. Limpeza de Logradouro para Brasília (Remove Conjuntos, Lotes, Blocos)
-            // Ex: "SHIS QI 23 Conjunto 1 a 10" vira "SHIS QI 23"
             const logradouroLimpo = d.logradouro.split('Conjunto')[0].split('Bloco')[0].split('Lote')[0].trim();
             
             // 3. Estratégia de Busca em Cascata (Travada no DF)
