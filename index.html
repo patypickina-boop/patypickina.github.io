@@ -221,7 +221,7 @@
                 iconAnchor: [7, 7]
             })
         }).addTo(map).bindPopup("<b>Sua Origem:</b><br>" + label).openPopup();
-        map.flyTo(pos, 14);
+        map.flyTo(pos, 15);
         applyFilters();
     }
 
@@ -231,6 +231,7 @@
         markers.forEach(m => map.removeLayer(m));
         markers = [];
 
+        // ORDENAÇÃO POR DISTÂNCIA (Sempre que houver localização)
         if (userPos) {
             data.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
@@ -330,32 +331,23 @@
             const d = await r.json();
             if(d.erro) throw new Error("CEP não encontrado");
 
-            // ESTRATÉGIA DE BUSCA EM 3 NÍVEIS (TRAVADA NO DF)
-            // Nível 1: Busca estruturada por PostalCode (Mais preciso)
+            // BUSCA ESTRUTURADA: Força a busca pelo código postal exato no Distrito Federal
             const geoUrl = `https://nominatim.openstreetmap.org/search?postalcode=${cepInput}&country=Brazil&state=Distrito+Federal&format=json&limit=1`;
+            
             const geo = await fetch(geoUrl);
             const g = await geo.json();
             
             if(g && g.length > 0) {
                 updateOriginMarker([parseFloat(g[0].lat), parseFloat(g[0].lon)], "CEP: " + cepInput + " (" + (d.bairro || d.localidade) + ")");
             } else {
-                // Nível 2: Busca por endereço textual travada no DF (Bounding Box)
+                // Fallback para busca textual travada no DF
                 const queryText = `${d.logradouro}, ${d.bairro}, ${d.localidade}, DF, Brasil`;
                 const geoFallback = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText)}&viewbox=-48.28,-16.05,-47.30,-15.45&bounded=1&limit=1`);
                 const gF = await geoFallback.json();
-                
                 if(gF && gF.length > 0) {
                     updateOriginMarker([parseFloat(gF[0].lat), parseFloat(gF[0].lon)], "CEP: " + cepInput);
                 } else {
-                    // Nível 3: Busca apenas pelo Bairro/Cidade Satélite no DF
-                    const queryBairro = `${d.bairro}, ${d.localidade}, DF, Brasil`;
-                    const geoBairro = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryBairro)}&viewbox=-48.28,-16.05,-47.30,-15.45&bounded=1&limit=1`);
-                    const gB = await geoBairro.json();
-                    if(gB && gB.length > 0) {
-                        updateOriginMarker([parseFloat(gB[0].lat), parseFloat(gB[0].lon)], "Região: " + d.bairro);
-                    } else {
-                        alert("Não foi possível marcar este CEP no mapa do DF. Tente o GPS.");
-                    }
+                    alert("Não foi possível marcar este CEP no mapa do DF. Tente o botão GPS.");
                 }
             }
         } catch(e) { 
