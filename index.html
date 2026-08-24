@@ -79,6 +79,7 @@
         .card {
             background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px;
             box-shadow: 0 3px 10px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s;
+            border-left: 6px solid #ddd;
         }
         .card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
         .card h3 { font-size: 1rem; color: var(--primary); margin-bottom: 12px; font-weight: 700; line-height: 1.3; }
@@ -210,18 +211,24 @@
     }
 
     function updateOriginMarker(pos, label) {
+        // Validação de segurança: O ponto está no DF?
+        if (pos[0] < -16.1 || pos[0] > -15.4 || pos[1] < -48.3 || pos[1] > -47.2) {
+            return false; 
+        }
+
         userPos = pos;
         if (userMarker) map.removeLayer(userMarker);
         userMarker = L.marker(pos, {
             icon: L.divIcon({
                 className: 'custom-div-icon',
-                html: "<div style='background-color:#e91e63; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
+                html: "<div style='background-color:#e91e63; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
                 iconSize: [16, 16],
                 iconAnchor: [8, 8]
             })
         }).addTo(map).bindPopup("<b>Origem da Busca:</b><br>" + label).openPopup();
         map.flyTo(pos, 15);
         applyFilters();
+        return true;
     }
 
     function render(data) {
@@ -244,6 +251,13 @@
             const card = document.createElement('div');
             card.className = 'card';
             
+            // Cor da borda baseada no programa
+            const prog = item.programas.toLowerCase();
+            if(prog.includes('serviços')) card.style.borderLeftColor = '#4caf50';
+            else if(prog.includes('pecuniária') || prog.includes('bens') || prog.includes('projetos')) card.style.borderLeftColor = '#ff9800';
+            else if(prog.includes('saúde')) card.style.borderLeftColor = '#f44336';
+            else if(prog.includes('palestras')) card.style.borderLeftColor = '#9c27b0';
+
             const progList = item.programas.split(',').map(p => p.trim());
             let tagsHtml = progList.map(p => {
                 let color = "#2196f3";
@@ -325,29 +339,35 @@
         if(cepInput.length < 8) return alert("Digite um CEP válido com 8 números.");
         
         const btn = document.querySelector('.btn-search');
+        const originalText = btn.innerText;
         btn.innerText = "...";
         btn.disabled = true;
 
         try {
-            // 1. Busca via ViaCEP para pegar o endereço estruturado
             const r = await fetch(`https://viacep.com.br/ws/${cepInput}/json/`);
             const d = await r.json();
             if(d.erro) throw new Error("CEP não encontrado");
 
-            // 2. Limpeza de Logradouro para Brasília (Remove Conjuntos, Lotes, Blocos)
-            const logradouroLimpo = d.logradouro.split('Conjunto')[0].split('Bloco')[0].split('Lote')[0].trim();
+            // Bounding Box do DF: lon_min, lat_max, lon_max, lat_min (Nominatim: left, top, right, bottom)
+            const viewbox = "-48.28,-15.45,-47.30,-16.05";
             
-            // 3. Estratégia de Busca em Cascata (Travada no DF)
-            // Bounding Box do DF: lon_min, lat_min, lon_max, lat_max
-            const bbox = "-48.28,-16.05,-47.30,-15.45"; 
-            
+            // Limpeza agressiva para Brasília (Remove Conjuntos, Lotes, Blocos que travam o mapa)
+            const logradouroLimpo = d.logradouro
+                .replace(/Conjunto\s+\d+(\s+a\s+\d+)?/gi, '')
+                .replace(/Bloco\s+[A-Z0-9]/gi, '')
+                .replace(/Lote\s+\d+/gi, '')
+                .replace(/Chácara\s+\d+/gi, '')
+                .trim();
+
             const queries = [
-                // Tentativa 1: CEP Direto (Mais preciso no OSM)
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cepInput + ', Brasil')}&viewbox=${bbox}&bounded=1&format=json&limit=1`,
-                // Tentativa 2: Logradouro Limpo + Brasília + DF
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(logradouroLimpo + ', Brasília, DF')}&viewbox=${bbox}&bounded=1&format=json&limit=1`,
-                // Tentativa 3: Bairro + Brasília + DF
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.bairro + ', Brasília, DF')}&viewbox=${bbox}&bounded=1&format=json&limit=1`
+                // 1. Busca estruturada por PostalCode
+                `https://nominatim.openstreetmap.org/search?postalcode=${cepInput}&country=Brazil&format=json&limit=1`,
+                // 2. Busca textual pelo CEP
+                `https://nominatim.openstreetmap.org/search?q=${cepInput},+Brasil&viewbox=${viewbox}&bounded=1&format=json&limit=1`,
+                // 3. Logradouro Limpo + Brasília
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(logradouroLimpo + ', Brasília, DF')}&viewbox=${viewbox}&bounded=1&format=json&limit=1`,
+                // 4. Bairro + Brasília
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.bairro + ', Brasília, DF')}&viewbox=${viewbox}&bounded=1&format=json&limit=1`
             ];
 
             let found = false;
@@ -357,9 +377,7 @@
                 if(g && g.length > 0) {
                     const lat = parseFloat(g[0].lat);
                     const lon = parseFloat(g[0].lon);
-                    // Validação extra: está dentro do DF?
-                    if (lat >= -16.1 && lat <= -15.4 && lon >= -48.3 && lon <= -47.2) {
-                        updateOriginMarker([lat, lon], "CEP: " + cepInput + " (" + (d.bairro || d.localidade) + ")");
+                    if (updateOriginMarker([lat, lon], "CEP: " + cepInput + " (" + (d.bairro || d.localidade) + ")")) {
                         found = true;
                         break;
                     }
@@ -371,7 +389,7 @@
         } catch(e) { 
             alert("Erro ao buscar CEP. Verifique o número digitado."); 
         } finally {
-            btn.innerText = "Buscar";
+            btn.innerText = originalText;
             btn.disabled = false;
         }
     }
