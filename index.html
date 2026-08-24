@@ -71,6 +71,7 @@
         .pill-servicos { background: #4caf50; }
         .pill-pecuniaria { background: #ff9800; }
         .pill-saude { background: #f44336; }
+        .pill-palestras { background: #9c27b0; }
 
         .counter { padding: 15px 20px; font-size: 0.85rem; color: #666; font-weight: bold; background: #f9f9f9; border-bottom: 1px solid #eee; }
 
@@ -78,21 +79,29 @@
         .card {
             background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px;
             box-shadow: 0 3px 10px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s;
-            border-left: 6px solid #ddd;
         }
         .card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
         .card h3 { font-size: 1rem; color: var(--primary); margin-bottom: 12px; font-weight: 700; line-height: 1.3; }
         .card p { font-size: 0.85rem; color: var(--text-grey); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .card p i { color: #999; width: 16px; text-align: center; }
         
+        .card-tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+        .card-tag { padding: 4px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; color: white; }
+
         .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
-        .view-map { color: var(--link-red); font-weight: bold; font-size: 0.85rem; }
-        .dist-pill { background: var(--dist-bg); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        .view-map { color: var(--link-red); font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
+        .dist-pill { background: var(--dist-bg); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
 
         #map { flex: 1; z-index: 1; }
+
+        .mobile-nav { display: none; background: white; border-top: 1px solid #ddd; height: 65px; }
+        .nav-btn { flex: 1; border: none; background: none; color: #777; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
+        .nav-btn.active { color: var(--primary); border-top: 4px solid var(--primary); }
 
         @media (max-width: 768px) {
             #sidebar { width: 100%; position: absolute; height: 100%; transform: translateX(-100%); }
             #sidebar.active { transform: translateX(0); }
+            .mobile-nav { display: flex; z-index: 1001; }
         }
 
         #loader { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
@@ -109,7 +118,7 @@
 
 <header>
     <h1>Localizador de Parceiros SEMA - MPDFT</h1>
-    <p>Busca profissional por endereço e proximidade</p>
+    <p>Encontre instituições parceiras próximas a você</p>
 </header>
 
 <main>
@@ -119,7 +128,7 @@
             
             <div class="input-group">
                 <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Busca por nome, programa ou palavra...">
+                <input type="text" id="search-input" placeholder="Busca global (nome, endereço, programa...)">
             </div>
 
             <div class="loc-row">
@@ -137,6 +146,7 @@
                 <div class="pill pill-servicos" onclick="filterCategory('Prestação de serviços', this)">Serviços</div>
                 <div class="pill pill-pecuniaria" onclick="filterCategory('Prestação Pecuniária', this)">Pecuniária</div>
                 <div class="pill pill-saude" onclick="filterCategory('Programa de saúde', this)">Saúde</div>
+                <div class="pill pill-palestras" onclick="filterCategory('Palestras', this)">Palestras</div>
             </div>
         </div>
 
@@ -146,6 +156,11 @@
 
     <div id="map"></div>
 </main>
+
+<nav class="mobile-nav">
+    <button class="nav-btn active" id="btn-map" onclick="toggleView('map')"><i class="fas fa-map-marked-alt fa-lg"></i>Mapa</button>
+    <button class="nav-btn" id="btn-list" onclick="toggleView('list')"><i class="fas fa-list-ul fa-lg"></i>Lista</button>
+</nav>
 
 <script>
     const SHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
@@ -164,13 +179,17 @@
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => {
                 allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição']).map(item => {
-                    let lat = parseFloat(String(item['Latitude'] || "").replace(',', '.'));
-                    let lng = parseFloat(String(item['Longitude'] || "").replace(',', '.'));
+                    let latRaw = String(item['Latitude'] || "").replace(',', '.').trim();
+                    let lngRaw = String(item['Longitude'] || "").replace(',', '.').trim();
+                    let lat = parseFloat(latRaw);
+                    let lng = parseFloat(lngRaw);
+                    
                     return {
                         nome: item['Nome '] || item['Nome da Instituição'],
                         endereco: item['Endereço'],
                         cep: item['CEP'],
                         programas: item['Programa'] || item['Programas'],
+                        horario: item['Horário de Funcionamento'] || item['Horário de Funcionamento/Observações'],
                         lat: isNaN(lat) ? null : lat,
                         lng: isNaN(lng) ? null : lng,
                         raw: JSON.stringify(item).toLowerCase()
@@ -183,7 +202,7 @@
     }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371.0088; // Raio geodésico
+        const R = 6371.0088; // Raio geodésico em km
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
@@ -205,81 +224,18 @@
         applyFilters();
     }
 
-    async function searchCEP() {
-        const cepInput = document.getElementById('cep-input').value.replace(/\D/g, '');
-        if(cepInput.length < 8) return alert("Digite um CEP válido.");
-        
-        const btn = document.querySelector('.btn-search');
-        btn.innerText = "...";
-        btn.disabled = true;
-
-        try {
-            // 1. Busca estruturada por PostalCode (Mais preciso)
-            const geoUrl = `https://nominatim.openstreetmap.org/search?postalcode=${cepInput}&country=Brazil&state=Distrito+Federal&format=json&limit=1`;
-            const geoResponse = await fetch(geoUrl);
-            const geoData = await geoResponse.json();
-            
-            if(geoData && geoData.length > 0) {
-                updateOriginMarker([parseFloat(geoData[0].lat), parseFloat(geoData[0].lon)], "CEP: " + cepInput);
-            } else {
-                // 2. Fallback: Busca via ViaCEP + Limpeza de Endereço de Brasília
-                const r = await fetch(`https://viacep.com.br/ws/${cepInput}/json/`);
-                const d = await r.json();
-                if(d.erro) throw new Error("CEP não encontrado");
-
-                // Limpeza: Remove "Conjunto", "Lote", "Bloco" que travam o mapa
-                const logradouroLimpo = d.logradouro.split('Conjunto')[0].split('Bloco')[0].split('Lote')[0].trim();
-                const queryText = `${logradouroLimpo}, Brasília, DF, Brasil`;
-                
-                const geoFallback = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryText)}&format=json&limit=1`);
-                const gF = await geoFallback.json();
-                
-                if(gF && gF.length > 0) {
-                    updateOriginMarker([parseFloat(gF[0].lat), parseFloat(gF[0].lon)], "CEP: " + cepInput + " (" + d.bairro + ")");
-                } else {
-                    // 3. Último recurso: Busca apenas pelo Bairro + Brasília
-                    const geoBairro = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.bairro + ', Brasília, DF')}&format=json&limit=1`);
-                    const gB = await geoBairro.json();
-                    if(gB && gB.length > 0) {
-                        updateOriginMarker([parseFloat(gB[0].lat), parseFloat(gB[0].lon)], "Região: " + d.bairro);
-                    } else {
-                        alert("Não foi possível marcar este CEP no mapa. Tente o GPS.");
-                    }
-                }
-            }
-        } catch(e) { 
-            alert("Erro ao buscar CEP. Verifique a conexão."); 
-        } finally {
-            btn.innerText = "Buscar";
-            btn.disabled = false;
-        }
-    }
-
-    function applyFilters() {
-        const search = document.getElementById('search-input').value.toLowerCase();
-        let filtered = allData.filter(i => {
-            const matchSearch = i.raw.includes(search);
-            let matchCat = currentCategory === 'Todos' || i.programas.toLowerCase().includes(currentCategory.toLowerCase());
-            if (currentCategory === 'Prestação Pecuniária') {
-                matchCat = i.programas.toLowerCase().includes('pecuniária') || i.programas.toLowerCase().includes('bens') || i.programas.toLowerCase().includes('projetos');
-            }
-            return matchSearch && matchCat;
-        });
-
-        if (userPos) {
-            filtered.sort((a, b) => {
-                if(!a.lat || !b.lat) return 1;
-                return calculateDistance(userPos[0], userPos[1], a.lat, a.lng) - calculateDistance(userPos[0], userPos[1], b.lat, b.lng);
-            });
-        }
-        render(filtered);
-    }
-
     function render(data) {
         const listDiv = document.getElementById('results-list');
         listDiv.innerHTML = '';
         markers.forEach(m => map.removeLayer(m));
         markers = [];
+
+        if (userPos) {
+            data.sort((a, b) => {
+                if(!a.lat || !b.lat) return 1;
+                return calculateDistance(userPos[0], userPos[1], a.lat, a.lng) - calculateDistance(userPos[0], userPos[1], b.lat, b.lng);
+            });
+        }
 
         document.getElementById('counter-text').innerText = `${data.length} instituições encontradas`;
 
@@ -288,18 +244,24 @@
             const card = document.createElement('div');
             card.className = 'card';
             
-            // Cor da borda baseada no programa
-            if(item.programas.includes('Serviços')) card.style.borderLeftColor = '#4caf50';
-            if(item.programas.includes('Pecuniária')) card.style.borderLeftColor = '#ff9800';
-            if(item.programas.includes('Saúde')) card.style.borderLeftColor = '#f44336';
+            const progList = item.programas.split(',').map(p => p.trim());
+            let tagsHtml = progList.map(p => {
+                let color = "#2196f3";
+                if(p.toLowerCase().includes("serviços")) color = "#4caf50";
+                if(p.toLowerCase().includes("pecuniária") || p.toLowerCase().includes("bens") || p.toLowerCase().includes("projetos")) color = "#ff9800";
+                if(p.toLowerCase().includes("saúde")) color = "#f44336";
+                return `<span class="card-tag" style="background:${color}">${p}</span>`;
+            }).join('');
 
             card.innerHTML = `
                 <h3>${item.nome}</h3>
                 <p><i class="fas fa-map-marker-alt"></i> ${item.endereco}</p>
-                <p><i class="fas fa-tag"></i> ${item.programas}</p>
+                <p><i class="fas fa-envelope"></i> CEP: ${item.cep}</p>
+                <p><i class="fas fa-clock"></i> ${item.horario}</p>
+                <div class="card-tags">${tagsHtml}</div>
                 <div class="card-footer">
                     <span class="view-map" onclick="zoomTo(${item.lat}, ${item.lng}, event)">
-                        <i class="fas fa-location-arrow"></i> Ver no Mapa
+                        <i class="fas fa-map"></i><i class="fas fa-map-marker-alt"></i> Ver no Mapa
                     </span>
                     ${dist ? `<div class="dist-pill">${dist} km</div>` : ''}
                 </div>
@@ -309,7 +271,7 @@
             listDiv.appendChild(card);
 
             if(item.lat) {
-                const m = L.marker([item.lat, item.lng]).bindPopup(`<b>${item.nome}</b>`).addTo(map);
+                const m = L.marker([item.lat, item.lng]).bindPopup(`<b>${item.nome}</b><br>${item.endereco}`).addTo(map);
                 markers.push(m);
             }
         });
@@ -317,8 +279,13 @@
 
     function zoomTo(lat, lng, e) {
         if(e) e.stopPropagation();
-        if(lat && lng) map.flyTo([lat, lng], 18, { duration: 1.5 });
+        if(lat && lng) {
+            map.flyTo([lat, lng], 18, { duration: 1.5 });
+            if(window.innerWidth < 768) toggleView('map');
+        }
     }
+
+    document.getElementById('search-input').oninput = applyFilters;
 
     function filterCategory(cat, el) {
         currentCategory = cat;
@@ -327,11 +294,79 @@
         applyFilters();
     }
 
+    function applyFilters() {
+        const search = document.getElementById('search-input').value.toLowerCase();
+        const filtered = allData.filter(i => {
+            const matchSearch = i.raw.includes(search);
+            let matchCat = false;
+            if (currentCategory === 'Todos') {
+                matchCat = true;
+            } else if (currentCategory === 'Prestação Pecuniária') {
+                const termosPecuniaria = ['pecuniária', 'bens', 'projetos'];
+                matchCat = termosPecuniaria.some(termo => i.programas.toLowerCase().includes(termo));
+            } else {
+                matchCat = i.programas.toLowerCase().includes(currentCategory.toLowerCase());
+            }
+            return matchSearch && matchCat;
+        });
+        render(filtered);
+    }
+
     function getLocation() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(p => {
                 updateOriginMarker([p.coords.latitude, p.coords.longitude], "Sua posição via GPS");
             }, () => alert("Ative o GPS do seu dispositivo."));
+        }
+    }
+
+    async function searchCEP() {
+        const cepInput = document.getElementById('cep-input').value.replace(/\D/g, '');
+        if(cepInput.length < 8) return alert("Digite um CEP válido com 8 números.");
+        
+        const btn = document.querySelector('.btn-search');
+        btn.innerText = "...";
+        btn.disabled = true;
+
+        try {
+            // 1. Busca via ViaCEP para pegar o endereço estruturado
+            const r = await fetch(`https://viacep.com.br/ws/${cepInput}/json/`);
+            const d = await r.json();
+            if(d.erro) throw new Error("CEP não encontrado");
+
+            // 2. Limpeza de Logradouro para Brasília (Remove Conjuntos, Lotes, Blocos)
+            const logradouroLimpo = d.logradouro.split('Conjunto')[0].split('Bloco')[0].split('Lote')[0].trim();
+            
+            // 3. Estratégia de Busca em Cascata (Travada no DF)
+            const bbox = "-48.28,-16.05,-47.30,-15.45"; // DF Bounding Box
+            
+            const queries = [
+                // Tentativa 1: Logradouro Limpo + Brasília + DF
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(logradouroLimpo + ', Brasília, DF')}&format=json&limit=1`,
+                // Tentativa 2: CEP Puro + Brasil
+                `https://nominatim.openstreetmap.org/search?postalcode=${cepInput}&country=Brazil&format=json&limit=1`,
+                // Tentativa 3: Bairro + Brasília + DF
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.bairro + ', Brasília, DF')}&format=json&limit=1`
+            ];
+
+            let found = false;
+            for (let url of queries) {
+                const geo = await fetch(url);
+                const g = await geo.json();
+                if(g && g.length > 0) {
+                    updateOriginMarker([parseFloat(g[0].lat), parseFloat(g[0].lon)], "CEP: " + cepInput + " (" + (d.bairro || d.localidade) + ")");
+                    found = true;
+                    break;
+                }
+            }
+            
+            if(!found) alert("Não foi possível marcar este CEP no mapa. Tente o GPS.");
+
+        } catch(e) { 
+            alert("Erro ao buscar CEP. Verifique o número digitado."); 
+        } finally {
+            btn.innerText = "Buscar";
+            btn.disabled = false;
         }
     }
 
@@ -346,7 +381,12 @@
         applyFilters();
     }
 
-    document.getElementById('search-input').oninput = applyFilters;
+    function toggleView(v) {
+        const s = document.getElementById('sidebar');
+        if(v === 'list') s.classList.add('active');
+        else s.classList.remove('active');
+    }
+
     window.onload = init;
 </script>
 </body>
