@@ -71,6 +71,7 @@
         .pill-servicos { background: #4caf50; }
         .pill-pecuniaria { background: #ff9800; }
         .pill-saude { background: #f44336; }
+        .pill-palestras { background: #9c27b0; }
 
         .status-msg { padding: 10px 20px; font-size: 0.8rem; font-weight: bold; display: none; border-radius: 8px; margin: 0 20px 10px; }
         .status-loading { background: #e3f2fd; color: #1976d2; }
@@ -88,6 +89,9 @@
         .card h3 { font-size: 1rem; color: var(--primary); margin-bottom: 12px; font-weight: 700; line-height: 1.3; }
         .card p { font-size: 0.85rem; color: var(--text-grey); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
         
+        .card-tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+        .card-tag { padding: 4px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; color: white; }
+
         .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
         .view-map { color: var(--link-red); font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
         .dist-pill { background: var(--dist-bg); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
@@ -146,6 +150,7 @@
                 <div class="pill pill-servicos" onclick="filterCategory('Prestação de serviços', this)" role="button">Serviços</div>
                 <div class="pill pill-pecuniaria" onclick="filterCategory('Prestação Pecuniária', this)" role="button">Pecuniária</div>
                 <div class="pill pill-saude" onclick="filterCategory('Programa de saúde', this)" role="button">Saúde</div>
+                <div class="pill pill-palestras" onclick="filterCategory('Palestras', this)" role="button">Palestras</div>
             </div>
         </div>
 
@@ -190,6 +195,7 @@
                         endereco: item['Endereço'],
                         cep: item['CEP'],
                         programas: item['Programa'] || item['Programas'],
+                        horario: item['Horário de Funcionamento'] || item['Horário de Funcionamento/Observações'],
                         lat: isNaN(lat) ? null : lat,
                         lng: isNaN(lng) ? null : lng,
                         raw: JSON.stringify(item).toLowerCase()
@@ -312,11 +318,24 @@
             if(prog.includes('serviços')) card.style.borderLeftColor = '#4caf50';
             else if(prog.includes('pecuniária') || prog.includes('bens') || prog.includes('projetos')) card.style.borderLeftColor = '#ff9800';
             else if(prog.includes('saúde')) card.style.borderLeftColor = '#f44336';
+            else if(prog.includes('palestras')) card.style.borderLeftColor = '#9c27b0';
+
+            const progList = item.programas.split(',').map(p => p.trim());
+            let tagsHtml = progList.map(p => {
+                let color = "#2196f3";
+                if(p.toLowerCase().includes("serviços")) color = "#4caf50";
+                if(p.toLowerCase().includes("pecuniária") || p.toLowerCase().includes("bens") || p.toLowerCase().includes("projetos")) color = "#ff9800";
+                if(p.toLowerCase().includes("saúde")) color = "#f44336";
+                if(p.toLowerCase().includes("palestras")) color = "#9c27b0";
+                return `<span class="card-tag" style="background:${color}">${p}</span>`;
+            }).join('');
 
             card.innerHTML = `
                 <h3>${item.nome}</h3>
                 <p><i class="fas fa-map-marker-alt"></i> ${item.endereco}</p>
-                <p><i class="fas fa-tag"></i> ${item.programas}</p>
+                <p><i class="fas fa-envelope"></i> CEP: ${item.cep}</p>
+                <p><i class="fas fa-clock"></i> ${item.horario}</p>
+                <div class="card-tags">${tagsHtml}</div>
                 <div class="card-footer">
                     <span class="view-map" onclick="zoomTo(${item.lat}, ${item.lng}, event)">
                         <i class="fas fa-location-arrow"></i> Ver no Mapa
