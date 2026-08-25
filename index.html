@@ -98,14 +98,9 @@
 
         #map { flex: 1; z-index: 1; }
 
-        .mobile-nav { display: none; background: white; border-top: 1px solid #ddd; height: 65px; }
-        .nav-btn { flex: 1; border: none; background: none; color: #777; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
-        .nav-btn.active { color: var(--primary); border-top: 4px solid var(--primary); }
-
         @media (max-width: 768px) {
             #sidebar { width: 100%; position: absolute; height: 100%; transform: translateX(-100%); }
             #sidebar.active { transform: translateX(0); }
-            .mobile-nav { display: flex; z-index: 1001; }
         }
 
         #loader { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
@@ -162,11 +157,6 @@
     <div id="map"></div>
 </main>
 
-<nav class="mobile-nav">
-    <button class="nav-btn active" id="btn-map" onclick="toggleView('map')"><i class="fas fa-map-marked-alt fa-lg"></i>Mapa</button>
-    <button class="nav-btn" id="btn-list" onclick="toggleView('list')"><i class="fas fa-list-ul fa-lg"></i>Lista</button>
-</nav>
-
 <script>
     const SHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
     const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
@@ -178,7 +168,6 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
         loadData();
         
-        // Acessibilidade: Busca ao apertar Enter
         document.getElementById('cep-input').addEventListener('keypress', e => { if(e.key === 'Enter') searchCEP(); });
         document.getElementById('search-input').addEventListener('input', applyFilters);
     }
@@ -216,7 +205,6 @@
     }
 
     function validateDF(lat, lon) {
-        // Bounding Box do Distrito Federal
         return lat >= -16.1 && lat <= -15.4 && lon >= -48.3 && lon <= -47.2;
     }
 
@@ -237,7 +225,7 @@
                 html: "<div style='background-color:#e91e63; width:18px; height:18px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
                 iconSize: [18, 18], iconAnchor: [9, 9]
             })
-        }).addTo(map).bindPopup("<b>Sua Origem:</b><br>" + label).openPopup();
+        }).addTo(map).bindPopup("<b>Origem:</b><br>" + label).openPopup();
         map.flyTo(pos, 15);
         applyFilters();
         showStatus("Localização definida!", "loading");
@@ -251,7 +239,7 @@
         showStatus("Buscando coordenadas...", "loading");
 
         try {
-            // 1. Tenta BrasilAPI (Coordenadas diretas e precisas)
+            // 1. Tenta BrasilAPI (Coordenadas diretas)
             const r1 = await fetch(`https://brasilapi.com.br/api/cep/v2/${cep}`);
             const d1 = await r1.json();
 
@@ -261,7 +249,7 @@
                 if (validateDF(lat, lon)) return updateOrigin([lat, lon], `CEP ${cep}`);
             }
 
-            // 2. Fallback: ViaCEP + Nominatim (Com limpeza de endereço de Brasília)
+            // 2. Fallback: ViaCEP + Nominatim (Limpeza Brasília)
             const r2 = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
             const d2 = await r2.json();
             if(d2.erro) throw new Error("CEP inexistente.");
@@ -356,10 +344,7 @@
 
     function zoomTo(lat, lng, e) {
         if(e) e.stopPropagation();
-        if(lat && lng) {
-            map.flyTo([lat, lng], 18, { duration: 1.5 });
-            if(window.innerWidth < 768) toggleView('map');
-        }
+        if(lat && lng) map.flyTo([lat, lng], 18, { duration: 1.5 });
     }
 
     function filterCategory(cat, el) {
@@ -387,14 +372,6 @@
         document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
         document.querySelector('.pill-all').classList.add('active');
         applyFilters();
-    }
-
-    function toggleView(v) {
-        const s = document.getElementById('sidebar');
-        if(v === 'list') s.classList.add('active');
-        else s.classList.remove('active');
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('btn-' + v).classList.add('active');
     }
 
     window.onload = init;
