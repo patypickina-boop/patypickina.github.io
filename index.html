@@ -72,7 +72,7 @@
         .pill-pecuniaria { background: #ff9800; }
         .pill-saude { background: #f44336; }
 
-        .status-msg { padding: 10px 20px; font-size: 0.8rem; font-weight: bold; display: none; }
+        .status-msg { padding: 10px 20px; font-size: 0.8rem; font-weight: bold; display: none; border-radius: 8px; margin: 0 20px 10px; }
         .status-loading { background: #e3f2fd; color: #1976d2; }
         .status-error { background: #ffebee; color: #c62828; }
 
@@ -175,7 +175,7 @@
         
         // Acessibilidade: Busca ao apertar Enter
         document.getElementById('cep-input').addEventListener('keypress', e => { if(e.key === 'Enter') searchCEP(); });
-        document.getElementById('search-input').addEventListener('keypress', e => { if(e.key === 'Enter') applyFilters(); });
+        document.getElementById('search-input').addEventListener('input', applyFilters);
     }
 
     function loadData() {
@@ -183,7 +183,6 @@
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => {
                 allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição']).map(item => {
-                    // Validação e limpeza de coordenadas da planilha
                     let lat = parseFloat(String(item['Latitude'] || "").replace(',', '.').trim());
                     let lng = parseFloat(String(item['Longitude'] || "").replace(',', '.').trim());
                     return {
@@ -211,7 +210,7 @@
     }
 
     function validateDF(lat, lon) {
-        // Bounding Box aproximada do Distrito Federal
+        // Bounding Box do Distrito Federal
         return lat >= -16.1 && lat <= -15.4 && lon >= -48.3 && lon <= -47.2;
     }
 
@@ -259,7 +258,7 @@
             // 2. Fallback: ViaCEP + Nominatim (Com limpeza de endereço de Brasília)
             const r2 = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
             const d2 = await r2.json();
-            if(d2.erro) throw new Error();
+            if(d2.erro) throw new Error("CEP inexistente.");
             if(d2.uf !== 'DF') return showStatus("Este CEP não é do Distrito Federal.", "error");
 
             const cleanAddr = d2.logradouro.split('Conjunto')[0].split('Lote')[0].split('Bloco')[0].trim();
@@ -273,7 +272,7 @@
             } else {
                 showStatus("CEP localizado, mas ponto não marcado. Tente o GPS.", "error");
             }
-        } catch(e) { showStatus("CEP não encontrado ou erro de conexão.", "error"); }
+        } catch(e) { showStatus(e.message || "Erro ao buscar CEP.", "error"); }
     }
 
     function applyFilters() {
