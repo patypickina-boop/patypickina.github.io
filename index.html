@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Localizador de Parceiros SEMA - MPDFT</title>
+    <title>Localizador de Parceiros Sema - MPDFT</title>
     
     <!-- Bibliotecas -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -123,8 +123,8 @@
 </div>
 
 <header role="banner">
-    <h1>Localizador de Parceiros SEMA - MPDFT</h1>
-    <p>Busca profissional por endereço e proximidade</p>
+    <h1>Localizador de Parceiros Sema - MPDFT</h1>
+    <p>Encontre instituições parceiras próximas a você</p>
 </header>
 
 <main>
@@ -267,8 +267,9 @@
             if(d2.erro) throw new Error("CEP inexistente.");
             if(d2.uf !== 'DF') return showStatus("Este CEP não é do Distrito Federal.", "error");
 
+            // Limpeza específica para Águas Claras e RAs do DF
             const cleanAddr = d2.logradouro.split('Conjunto')[0].split('Lote')[0].split('Bloco')[0].trim();
-            const query = `${cleanAddr}, ${d2.bairro}, Brasília, DF, Brasil`;
+            const query = `${cleanAddr}, ${d2.bairro}, Distrito Federal, Brasil`;
             
             const r3 = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
             const d3 = await r3.json();
