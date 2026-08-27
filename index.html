@@ -100,7 +100,6 @@
 
         #map { flex: 1; z-index: 1; }
 
-        /* Navegação Mobile */
         .mobile-nav { display: none; background: white; border-top: 1px solid #ddd; height: 65px; }
         .nav-btn { flex: 1; border: none; background: none; color: #777; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
         .nav-btn.active { color: var(--primary); border-top: 4px solid var(--primary); }
@@ -189,15 +188,16 @@
         Papa.parse(CSV_URL, {
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => {
-                allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição']).map(item => {
-                    let lat = parseFloat(String(item['Latitude'] || "").replace(',', '.').trim());
-                    let lng = parseFloat(String(item['Longitude'] || "").replace(',', '.').trim());
+                allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição'] || r['Nome Completo']).map(item => {
+                    // LIMPEZA AUTOMÁTICA: Troca vírgula por ponto nas coordenadas
+                    let lat = parseFloat(String(item['Latitude'] || item['latitude_opcional_'] || "").replace(',', '.').trim());
+                    let lng = parseFloat(String(item['Longitude'] || item['longitude_opcional_'] || "").replace(',', '.').trim());
                     return {
-                        nome: item['Nome '] || item['Nome da Instituição'],
-                        endereco: item['Endereço'],
-                        cep: item['CEP'],
-                        programas: item['Programa'] || item['Programas'],
-                        horario: item['Horário de Funcionamento'] || item['Horário de Funcionamento/Observações'],
+                        nome: item['Nome '] || item['Nome da Instituição'] || item['Nome Completo'],
+                        endereco: item['Endereço'] || item['endereco'],
+                        cep: item['CEP'] || item['cep'],
+                        programas: item['Programa'] || item['Programas'] || item['programas'],
+                        horario: item['Horário de Funcionamento'] || item['horario_de_funcionamento_observacoes'],
                         lat: isNaN(lat) ? null : lat,
                         lng: isNaN(lng) ? null : lng,
                         raw: JSON.stringify(item).toLowerCase()
@@ -252,7 +252,7 @@
         showStatus("Buscando coordenadas...", "loading");
 
         try {
-            // 1. Tenta BrasilAPI v2 (Coordenadas diretas e precisas)
+            // 1. Tenta BrasilAPI v2 (Coordenadas diretas)
             const r1 = await fetch(`https://brasilapi.com.br/api/cep/v2/${cep}`);
             const d1 = await r1.json();
 
@@ -262,7 +262,7 @@
                 if (validateDF(lat, lon)) return updateOrigin([lat, lon], `CEP ${cep}`);
             }
 
-            // 2. Fallback: ViaCEP + Nominatim (Com limpeza de endereço de Brasília)
+            // 2. Fallback: ViaCEP + Nominatim (Limpeza Brasília)
             const r2 = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
             const d2 = await r2.json();
             if(d2.erro) throw new Error("CEP inexistente.");
@@ -317,13 +317,13 @@
             card.setAttribute('role', 'listitem');
             card.setAttribute('tabindex', '0');
             
-            const prog = item.programas.toLowerCase();
+            const prog = item.programas ? item.programas.toLowerCase() : "";
             if(prog.includes('serviços')) card.style.borderLeftColor = '#4caf50';
             else if(prog.includes('pecuniária') || prog.includes('bens') || prog.includes('projetos')) card.style.borderLeftColor = '#ff9800';
             else if(prog.includes('saúde')) card.style.borderLeftColor = '#f44336';
             else if(prog.includes('palestras')) card.style.borderLeftColor = '#9c27b0';
 
-            const progList = item.programas.split(',').map(p => p.trim());
+            const progList = item.programas ? item.programas.split(',').map(p => p.trim()) : [];
             let tagsHtml = progList.map(p => {
                 let color = "#2196f3";
                 if(p.toLowerCase().includes("serviços")) color = "#4caf50";
@@ -404,4 +404,4 @@
     window.onload = init;
 </script>
 </body>
-</html>s
+</html>
