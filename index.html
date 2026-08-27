@@ -51,7 +51,7 @@
 
         .input-group { position: relative; margin-bottom: 12px; }
         .input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #2196f3; }
-        .input-group input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 16px; /* Evita zoom no iOS */ }
+        .input-group input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 16px; }
 
         .loc-row { display: flex; gap: 8px; margin-bottom: 12px; }
         .loc-row input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
@@ -89,6 +89,7 @@
         .card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
         .card h3 { font-size: 1rem; color: var(--primary); margin-bottom: 12px; font-weight: 700; line-height: 1.3; }
         .card p { font-size: 0.85rem; color: var(--text-grey); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .card p i { color: #999; width: 16px; text-align: center; }
         
         .card-tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
         .card-tag { padding: 4px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; color: white; }
@@ -99,7 +100,6 @@
 
         #map { flex: 1; z-index: 1; }
 
-        /* Navegação Mobile */
         .mobile-nav { display: none; background: white; border-top: 1px solid #ddd; height: 65px; }
         .nav-btn { flex: 1; border: none; background: none; color: #777; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
         .nav-btn.active { color: var(--primary); border-top: 4px solid var(--primary); }
@@ -180,7 +180,6 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
         loadData();
         
-        // Acessibilidade: Busca ao apertar Enter
         document.getElementById('cep-input').addEventListener('keypress', e => { if(e.key === 'Enter') searchCEP(); });
         document.getElementById('search-input').addEventListener('input', applyFilters);
     }
@@ -252,7 +251,7 @@
         showStatus("Buscando coordenadas...", "loading");
 
         try {
-            // 1. Tenta BrasilAPI (Coordenadas diretas)
+            // 1. Tenta BrasilAPI v2 (Coordenadas diretas e precisas)
             const r1 = await fetch(`https://brasilapi.com.br/api/cep/v2/${cep}`);
             const d1 = await r1.json();
 
@@ -262,7 +261,7 @@
                 if (validateDF(lat, lon)) return updateOrigin([lat, lon], `CEP ${cep}`);
             }
 
-            // 2. Fallback: ViaCEP + Nominatim (Limpeza Brasília)
+            // 2. Fallback: ViaCEP + Nominatim (Com limpeza de endereço de Brasília)
             const r2 = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
             const d2 = await r2.json();
             if(d2.erro) throw new Error("CEP inexistente.");
