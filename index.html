@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Localizador de Parceiros Sema - MPDFT</title>
+    <title>Localizador de Parceiros SEMA - MPDFT</title>
     
     <!-- Bibliotecas -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -51,18 +51,14 @@
 
         .input-group { position: relative; margin-bottom: 12px; }
         .input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #2196f3; }
-        .input-group input, .select-group select { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 14px; }
-
-        .select-group { position: relative; margin-bottom: 12px; }
-        .select-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #4caf50; }
-        .select-group select { padding-left: 40px; appearance: none; background: white; cursor: pointer; font-weight: bold; color: var(--primary); }
+        .input-group input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
 
         .loc-row { display: flex; gap: 8px; margin-bottom: 12px; }
         .loc-row input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
-        .btn-search { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; min-width: 80px; }
+        .btn-search { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
 
         .btn-row { display: flex; gap: 8px; margin-bottom: 15px; }
-        .btn-gps { flex: 1; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-gps { flex: 1; background: var(--accent); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-clear { background: #eee; color: #666; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
 
         .category-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -77,38 +73,53 @@
         .pill-saude { background: #f44336; }
         .pill-palestras { background: #9c27b0; }
 
+        .counter { padding: 15px 20px; font-size: 0.85rem; color: #666; font-weight: bold; background: #f9f9f9; border-bottom: 1px solid #eee; }
+
         #results-list { flex: 1; overflow-y: auto; padding: 15px; background: #f9f9f9; }
-        
-        /* Ajuste para os cards não cortarem informação */
         .card {
             background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px;
             box-shadow: 0 3px 10px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s;
-            border-left: 6px solid #ddd; height: auto; min-height: 160px; display: flex; flex-direction: column;
+            border-left: 6px solid #ddd;
         }
         .card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
         .card h3 { font-size: 1rem; color: var(--primary); margin-bottom: 12px; font-weight: 700; line-height: 1.3; }
-        .card p { font-size: 0.85rem; color: var(--text-grey); margin-bottom: 8px; display: flex; align-items: flex-start; gap: 10px; }
+        .card p { font-size: 0.85rem; color: var(--text-grey); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .card p i { color: #999; width: 16px; text-align: center; }
         
-        .card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-        .card-tag { padding: 4px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; color: white; white-space: normal; text-align: center; }
+        .card-tags { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+        .card-tag { padding: 4px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; color: white; }
 
-        .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 15px; }
+        .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
         .view-map { color: var(--link-red); font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
-        .dist-pill { background: var(--dist-bg); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        .dist-pill { background: var(--dist-bg); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
 
         #map { flex: 1; z-index: 1; }
+
+        .mobile-nav { display: none; background: white; border-top: 1px solid #ddd; height: 65px; }
+        .nav-btn { flex: 1; border: none; background: none; color: #777; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
+        .nav-btn.active { color: var(--primary); border-top: 4px solid var(--primary); }
 
         @media (max-width: 768px) {
             #sidebar { width: 100%; position: absolute; height: 100%; transform: translateX(-100%); }
             #sidebar.active { transform: translateX(0); }
+            .mobile-nav { display: flex; z-index: 1001; }
         }
+
+        #loader { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
+        .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
+<div id="loader">
+    <div class="spinner"></div>
+    <p style="margin-top:20px; font-weight:bold; color:var(--primary)">Sincronizando com MPDFT...</p>
+</div>
+
 <header>
-    <h1>Localizador de Parceiros Sema - MPDFT</h1>
-    <p>encontre instituições parceiras próximas a você</p>
+    <h1>Localizador de Parceiros SEMA - MPDFT</h1>
+    <p>Encontre instituições parceiras próximas a você</p>
 </header>
 
 <main>
@@ -118,18 +129,11 @@
             
             <div class="input-group">
                 <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Busca por nome, programa ou palavra...">
-            </div>
-
-            <div class="select-group">
-                <i class="fas fa-city"></i>
-                <select id="satelite-filter" onchange="applyFilters()">
-                    <option value="Todos">Todas as Cidades Satélites</option>
-                </select>
+                <input type="text" id="search-input" placeholder="Busca global (nome, endereço, programa...)">
             </div>
 
             <div class="loc-row">
-                <input type="text" id="cep-input" placeholder="Digite o CEP de busca" maxlength="9">
+                <input type="text" id="cep-input" placeholder="Digite o CEP de busca">
                 <button class="btn-search" onclick="searchCEP()">Buscar</button>
             </div>
 
@@ -147,124 +151,126 @@
             </div>
         </div>
 
+        <div class="counter" id="counter-text">Carregando instituições...</div>
         <div id="results-list"></div>
     </aside>
 
     <div id="map"></div>
 </main>
 
+<nav class="mobile-nav">
+    <button class="nav-btn active" id="btn-map" onclick="toggleView('map')"><i class="fas fa-map-marked-alt fa-lg"></i>Mapa</button>
+    <button class="nav-btn" id="btn-list" onclick="toggleView('list')"><i class="fas fa-list-ul fa-lg"></i>Lista</button>
+</nav>
+
 <script>
-    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw/export?format=csv';
+    const SHEET_ID = '179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw';
+    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
+
     let map, markers = [], allData = [], currentCategory = 'Todos', userPos = null, userMarker = null;
 
     function init() {
         map = L.map('map').setView([-15.7942, -47.8822], 11);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
         loadData();
-        document.getElementById('search-input').addEventListener('input', applyFilters);
     }
 
     function loadData() {
-        Papa.parse(SHEET_URL, {
+        Papa.parse(CSV_URL, {
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => {
-                const satelitesSet = new Set();
-                allData = results.data.filter(r => r['Nome Completo'] || r['Nome da Instituição'] || r['Nome ']).map(item => {
-                    let lat = parseFloat(String(item['Latitude'] || "").replace(',', '.'));
-                    let lng = parseFloat(String(item['Longitude'] || "").replace(',', '.'));
-                    let sat = item['Cidade Satélite'] || "Brasília";
-                    if(sat) satelitesSet.add(sat);
+                allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição']).map(item => {
+                    let latRaw = String(item['Latitude'] || "").replace(',', '.').trim();
+                    let lngRaw = String(item['Longitude'] || "").replace(',', '.').trim();
+                    let lat = parseFloat(latRaw);
+                    let lng = parseFloat(lngRaw);
                     
                     return {
-                        nome: item['Nome Completo'] || item['Nome da Instituição'] || item['Nome '],
-                        endereco: item['Endereço'] || "Não informado",
-                        cep: item['CEP'] || "Não informado",
-                        satelite: sat,
-                        programas: item['Programa'] || item['Programas'] || "",
-                        horario: item['Horário de Funcionamento'] || "Não informado",
+                        nome: item['Nome '] || item['Nome da Instituição'],
+                        endereco: item['Endereço'],
+                        cep: item['CEP'],
+                        programas: item['Programa'] || item['Programas'],
+                        horario: item['Horário de Funcionamento'] || item['Horário de Funcionamento/Observações'],
                         lat: isNaN(lat) ? null : lat,
                         lng: isNaN(lng) ? null : lng,
                         raw: JSON.stringify(item).toLowerCase()
                     };
                 });
-
-                // Popula o filtro de satélites dinamicamente
-                const select = document.getElementById('satelite-filter');
-                Array.from(satelitesSet).sort().forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s; opt.textContent = s;
-                    select.appendChild(opt);
-                });
-
                 applyFilters();
+                document.getElementById('loader').style.display = 'none';
             }
         });
     }
 
-    async function searchCEP() {
-        const cep = document.getElementById('cep-input').value.replace(/\D/g, '');
-        if(cep.length !== 8) return alert("CEP inválido");
-        try {
-            const r = await fetch(`https://brasilapi.com.br/api/cep/v2/${cep}`);
-            const d = await r.json();
-            if (d.location && d.location.coordinates) {
-                userPos = [parseFloat(d.location.coordinates.latitude), parseFloat(d.location.coordinates.longitude)];
-                updateOriginMarker(userPos, `CEP ${cep}`);
-            }
-        } catch(e) { alert("Erro ao localizar CEP."); }
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371.0088; // Raio geodésico em km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
     function updateOriginMarker(pos, label) {
-        if(userMarker) map.removeLayer(userMarker);
-        userMarker = L.marker(pos, {icon: L.divIcon({className:'origin', html:'<div style="background:#e91e63;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5)"></div>'})}).addTo(map);
+        // Validação de segurança: O ponto está no DF?
+        if (pos[0] < -16.1 || pos[0] > -15.4 || pos[1] < -48.3 || pos[1] > -47.2) {
+            return false; 
+        }
+
+        userPos = pos;
+        if (userMarker) map.removeLayer(userMarker);
+        userMarker = L.marker(pos, {
+            icon: L.divIcon({
+                className: 'custom-div-icon',
+                html: "<div style='background-color:#e91e63; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);'></div>",
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            })
+        }).addTo(map).bindPopup("<b>Origem da Busca:</b><br>" + label).openPopup();
         map.flyTo(pos, 15);
         applyFilters();
+        return true;
     }
 
-    function applyFilters() {
-        const search = document.getElementById('search-input').value.toLowerCase();
-        const satelite = document.getElementById('satelite-filter').value;
-        
-        let filtered = allData.filter(i => {
-            const matchSearch = i.raw.includes(search);
-            const matchSatelite = satelite === 'Todos' || i.satelite === satelite;
-            let matchCat = currentCategory === 'Todos' || i.programas.toLowerCase().includes(currentCategory.toLowerCase());
-            return matchSearch && matchSatelite && matchCat;
-        });
+    function render(data) {
+        const listDiv = document.getElementById('results-list');
+        listDiv.innerHTML = '';
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
 
         if (userPos) {
-            filtered.sort((a, b) => {
+            data.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
                 return calculateDistance(userPos[0], userPos[1], a.lat, a.lng) - calculateDistance(userPos[0], userPos[1], b.lat, b.lng);
             });
         }
-        render(filtered);
-    }
 
-    function render(data) {
-        const list = document.getElementById('results-list');
-        list.innerHTML = '';
-        markers.forEach(m => map.removeLayer(m));
-        markers = [];
+        document.getElementById('counter-text').innerText = `${data.length} instituições encontradas`;
 
         data.forEach(item => {
             const dist = userPos && item.lat ? calculateDistance(userPos[0], userPos[1], item.lat, item.lng).toFixed(1) : null;
             const card = document.createElement('div');
             card.className = 'card';
             
-            let tagsHtml = item.programas.split(',').map(p => {
+            // Cor da borda baseada no programa
+            const prog = item.programas.toLowerCase();
+            if(prog.includes('serviços')) card.style.borderLeftColor = '#4caf50';
+            else if(prog.includes('pecuniária') || prog.includes('bens') || prog.includes('projetos')) card.style.borderLeftColor = '#ff9800';
+            else if(prog.includes('saúde')) card.style.borderLeftColor = '#f44336';
+            else if(prog.includes('palestras')) card.style.borderLeftColor = '#9c27b0';
+
+            const progList = item.programas.split(',').map(p => p.trim());
+            let tagsHtml = progList.map(p => {
                 let color = "#2196f3";
                 if(p.toLowerCase().includes("serviços")) color = "#4caf50";
-                if(p.toLowerCase().includes("pecuniária")) color = "#ff9800";
+                if(p.toLowerCase().includes("pecuniária") || p.toLowerCase().includes("bens") || p.toLowerCase().includes("projetos")) color = "#ff9800";
                 if(p.toLowerCase().includes("saúde")) color = "#f44336";
-                if(p.toLowerCase().includes("palestras")) color = "#9c27b0";
-                return `<span class="card-tag" style="background:${color}">${p.trim()}</span>`;
+                return `<span class="card-tag" style="background:${color}">${p}</span>`;
             }).join('');
 
             card.innerHTML = `
                 <h3>${item.nome}</h3>
                 <p><i class="fas fa-map-marker-alt"></i> ${item.endereco}</p>
-                <p><i class="fas fa-city"></i> ${item.satelite}</p>
+                <p><i class="fas fa-envelope"></i> CEP: ${item.cep}</p>
                 <p><i class="fas fa-clock"></i> ${item.horario}</p>
                 <div class="card-tags">${tagsHtml}</div>
                 <div class="card-footer">
@@ -274,33 +280,123 @@
                     ${dist ? `<div class="dist-pill">${dist} km</div>` : ''}
                 </div>
             `;
-            card.onclick = () => { if(item.lat) map.flyTo([item.lat, item.lng], 18); };
-            list.appendChild(card);
-            if(item.lat) markers.push(L.marker([item.lat, item.lng]).addTo(map).bindPopup(item.nome));
+            
+            card.onclick = () => zoomTo(item.lat, item.lng);
+            listDiv.appendChild(card);
+
+            if(item.lat) {
+                const m = L.marker([item.lat, item.lng]).bindPopup(`<b>${item.nome}</b><br>${item.endereco}`).addTo(map);
+                markers.push(m);
+            }
         });
     }
 
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371;
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    function zoomTo(lat, lng, e) {
+        if(e) e.stopPropagation();
+        if(lat && lng) {
+            map.flyTo([lat, lng], 18, { duration: 1.5 });
+            if(window.innerWidth < 768) toggleView('map');
+        }
+    }
+
+    document.getElementById('search-input').oninput = applyFilters;
+
+    function filterCategory(cat, el) {
+        currentCategory = cat;
+        document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const search = document.getElementById('search-input').value.toLowerCase();
+        const filtered = allData.filter(i => {
+            const matchSearch = i.raw.includes(search);
+            let matchCat = false;
+            if (currentCategory === 'Todos') {
+                matchCat = true;
+            } else if (currentCategory === 'Prestação Pecuniária') {
+                const termosPecuniaria = ['pecuniária', 'bens', 'projetos'];
+                matchCat = termosPecuniaria.some(termo => i.programas.toLowerCase().includes(termo));
+            } else {
+                matchCat = i.programas.toLowerCase().includes(currentCategory.toLowerCase());
+            }
+            return matchSearch && matchCat;
+        });
+        render(filtered);
     }
 
     function getLocation() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(p => {
-                userPos = [p.coords.latitude, p.coords.longitude];
-                updateOriginMarker(userPos, "Sua localização");
-            });
+                updateOriginMarker([p.coords.latitude, p.coords.longitude], "Sua posição via GPS");
+            }, () => alert("Ative o GPS do seu dispositivo."));
+        }
+    }
+
+    async function searchCEP() {
+        const cepInput = document.getElementById('cep-input').value.replace(/\D/g, '');
+        if(cepInput.length < 8) return alert("Digite um CEP válido com 8 números.");
+        
+        const btn = document.querySelector('.btn-search');
+        const originalText = btn.innerText;
+        btn.innerText = "...";
+        btn.disabled = true;
+
+        try {
+            const r = await fetch(`https://viacep.com.br/ws/${cepInput}/json/`);
+            const d = await r.json();
+            if(d.erro) throw new Error("CEP não encontrado");
+
+            // Bounding Box do DF: lon_min, lat_max, lon_max, lat_min (Nominatim: left, top, right, bottom)
+            const viewbox = "-48.28,-15.45,-47.30,-16.05";
+            
+            // Limpeza agressiva para Brasília (Remove Conjuntos, Lotes, Blocos que travam o mapa)
+            const logradouroLimpo = d.logradouro
+                .replace(/Conjunto\s+\d+(\s+a\s+\d+)?/gi, '')
+                .replace(/Bloco\s+[A-Z0-9]/gi, '')
+                .replace(/Lote\s+\d+/gi, '')
+                .replace(/Chácara\s+\d+/gi, '')
+                .trim();
+
+            const queries = [
+                // 1. Busca estruturada por PostalCode
+                `https://nominatim.openstreetmap.org/search?postalcode=${cepInput}&country=Brazil&format=json&limit=1`,
+                // 2. Busca textual pelo CEP
+                `https://nominatim.openstreetmap.org/search?q=${cepInput},+Brasil&viewbox=${viewbox}&bounded=1&format=json&limit=1`,
+                // 3. Logradouro Limpo + Brasília
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(logradouroLimpo + ', Brasília, DF')}&viewbox=${viewbox}&bounded=1&format=json&limit=1`,
+                // 4. Bairro + Brasília
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.bairro + ', Brasília, DF')}&viewbox=${viewbox}&bounded=1&format=json&limit=1`
+            ];
+
+            let found = false;
+            for (let url of queries) {
+                const geo = await fetch(url);
+                const g = await geo.json();
+                if(g && g.length > 0) {
+                    const lat = parseFloat(g[0].lat);
+                    const lon = parseFloat(g[0].lon);
+                    if (updateOriginMarker([lat, lon], "CEP: " + cepInput + " (" + (d.bairro || d.localidade) + ")")) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            
+            if(!found) alert("Não foi possível marcar este CEP no mapa do DF. Tente o GPS.");
+
+        } catch(e) { 
+            alert("Erro ao buscar CEP. Verifique o número digitado."); 
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
     }
 
     function clearFilters() {
         document.getElementById('search-input').value = '';
         document.getElementById('cep-input').value = '';
-        document.getElementById('satelite-filter').value = 'Todos';
         userPos = null;
         if (userMarker) map.removeLayer(userMarker);
         currentCategory = 'Todos';
@@ -309,11 +405,10 @@
         applyFilters();
     }
 
-    function filterCategory(cat, el) {
-        currentCategory = cat;
-        document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-        el.classList.add('active');
-        applyFilters();
+    function toggleView(v) {
+        const s = document.getElementById('sidebar');
+        if(v === 'list') s.classList.add('active');
+        else s.classList.remove('active');
     }
 
     window.onload = init;
