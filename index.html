@@ -13,8 +13,8 @@
 
     <style>
         :root {
-            --primary: #002147; /* Azul Oficial MPDFT */
-            --accent: #e91e63;  /* Rosa de Destaque para Busca */
+            --primary: #002147; /* Azul MPDFT */
+            --accent: #e91e63;  /* Rosa Busca */
             --bg: #f4f7f6;
             --text-grey: #666;
             --link-red: #a52a2a;
@@ -99,7 +99,6 @@
 
         #map { flex: 1; z-index: 1; }
 
-        /* Navegação Mobile */
         .mobile-nav { display: none; background: white; border-top: 1px solid #ddd; height: 65px; }
         .nav-btn { flex: 1; border: none; background: none; color: #777; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
         .nav-btn.active { color: var(--primary); border-top: 4px solid var(--primary); }
@@ -218,6 +217,7 @@
     }
 
     function validateDF(lat, lon) {
+        // Bounding Box do Distrito Federal
         return lat >= -16.1 && lat <= -15.4 && lon >= -48.3 && lon <= -47.2;
     }
 
@@ -336,15 +336,15 @@
 
             card.innerHTML = `
                 <h3>${item.nome}</h3>
-                <p><i class="fas fa-map-marker-alt" aria-hidden="true"></i> ${item.endereco}</p>
-                <p><i class="fas fa-envelope" aria-hidden="true"></i> CEP: ${item.cep}</p>
-                <p><i class="fas fa-clock" aria-hidden="true"></i> ${item.horario}</p>
+                <p><i class="fas fa-map-marker-alt"></i> ${item.endereco}</p>
+                <p><i class="fas fa-envelope"></i> CEP: ${item.cep}</p>
+                <p><i class="fas fa-clock"></i> ${item.horario}</p>
                 <div class="card-tags">${tagsHtml}</div>
                 <div class="card-footer">
                     <span class="view-map" onclick="zoomTo(${item.lat}, ${item.lng}, event)">
-                        <i class="fas fa-location-arrow" aria-hidden="true"></i> Ver no Mapa
+                        <i class="fas fa-location-arrow"></i> Ver no Mapa
                     </span>
-                    ${dist ? `<div class="dist-pill" aria-label="Distância de ${dist} quilômetros">${dist} km</div>` : ''}
+                    ${dist ? `<div class="dist-pill">${dist} km</div>` : ''}
                 </div>
             `;
             
