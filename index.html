@@ -3,57 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Localizador de Parceiros SEMA - MPDFT</title>
+    <title>Localizador de Parceiros Sema - MPDFT</title>
     
+    <!-- Bibliotecas -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
     <style>
-        :root { --primary: #002147; --accent: #e91e63; --bg: #f4f7f6; --text-grey: #666; --link-red: #a52a2a; --dist-bg: #444; }
+        :root {
+            --primary: #002147; /* Azul MPDFT */
+            --accent: #e91e63;  /* Rosa Busca */
+            --bg: #f4f7f6;
+            --text-grey: #666;
+            --link-red: #a52a2a;
+            --dist-bg: #444;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        header { background: var(--primary); color: white; padding: 15px 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.3); z-index: 1000; }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 15px 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
         header h1 { font-size: 1.3rem; font-weight: 600; }
+        header p { font-size: 0.85rem; opacity: 0.9; }
+
         main { flex: 1; display: flex; overflow: hidden; position: relative; }
-        #sidebar { width: 400px; background: white; display: flex; flex-direction: column; box-shadow: 2px 0 15px rgba(0,0,0,0.1); z-index: 900; transition: 0.3s ease; }
+
+        #sidebar {
+            width: 400px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+            z-index: 900;
+            transition: 0.3s ease;
+        }
+
         .filter-container { padding: 20px; border-bottom: 1px solid #eee; }
+        .filter-title { color: var(--primary); font-size: 1.1rem; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-weight: bold; }
+
         .input-group { position: relative; margin-bottom: 12px; }
         .input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #2196f3; }
         .input-group input, .select-group select { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 14px; }
+
         .select-group { position: relative; margin-bottom: 12px; }
         .select-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #4caf50; }
         .select-group select { padding-left: 40px; appearance: none; background: white; cursor: pointer; font-weight: bold; color: var(--primary); }
+
+        .loc-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .loc-row input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+        .btn-search { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.8rem; min-width: 80px; }
+
+        .btn-row { display: flex; gap: 8px; margin-bottom: 15px; }
+        .btn-gps { flex: 1; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-clear { background: #eee; color: #666; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+
+        .category-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .pill {
+            padding: 8px 15px; border-radius: 25px; font-size: 0.75rem; font-weight: bold;
+            cursor: pointer; transition: 0.2s; color: white; border: 2px solid transparent; opacity: 0.7;
+        }
+        .pill.active { opacity: 1; transform: scale(1.05); border-color: rgba(0,0,0,0.2); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .pill-all { background: #2196f3; }
+        .pill-servicos { background: #4caf50; }
+        .pill-pecuniaria { background: #ff9800; }
+        .pill-saude { background: #f44336; }
+        .pill-palestras { background: #9c27b0; }
+
+        #results-list { flex: 1; overflow-y: auto; padding: 15px; background: #f9f9f9; }
         
         /* Ajuste para os cards não cortarem informação */
-        .card { 
-            background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; 
-            box-shadow: 0 3px 10px rgba(0,0,0,0.05); cursor: pointer; border-left: 6px solid #ddd; 
-            transition: 0.2s; height: auto; min-height: 150px; display: flex; flex-direction: column;
+        .card {
+            background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s;
+            border-left: 6px solid #ddd; height: auto; min-height: 160px; display: flex; flex-direction: column;
         }
-        .card h3 { font-size: 1rem; color: var(--primary); margin-bottom: 10px; line-height: 1.2; }
-        .card p { font-size: 0.85rem; color: var(--text-grey); margin-bottom: 6px; display: flex; align-items: flex-start; gap: 8px; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+        .card h3 { font-size: 1rem; color: var(--primary); margin-bottom: 12px; font-weight: 700; line-height: 1.3; }
+        .card p { font-size: 0.85rem; color: var(--text-grey); margin-bottom: 8px; display: flex; align-items: flex-start; gap: 10px; }
         
-        /* Tags que se ajustam automaticamente */
-        .card-tags-container { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-        .card-tag { padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: bold; color: white; white-space: normal; text-align: center; }
-        
-        #results-list { flex: 1; overflow-y: auto; padding: 15px; background: #f9f9f9; }
+        .card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .card-tag { padding: 4px 12px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; color: white; white-space: normal; text-align: center; }
+
+        .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 15px; }
+        .view-map { color: var(--link-red); font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
+        .dist-pill { background: var(--dist-bg); color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+
         #map { flex: 1; z-index: 1; }
-        @media (max-width: 768px) { #sidebar { width: 100%; position: absolute; height: 100%; transform: translateX(-100%); } #sidebar.active { transform: translateX(0); } }
+
+        @media (max-width: 768px) {
+            #sidebar { width: 100%; position: absolute; height: 100%; transform: translateX(-100%); }
+            #sidebar.active { transform: translateX(0); }
+        }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>Localizador de Parceiros SEMA - MPDFT</h1>
-    <p>Busca inteligente por proximidade e satélite</p>
+    <h1>Localizador de Parceiros Sema - MPDFT</h1>
+    <p>encontre instituições parceiras próximas a você</p>
 </header>
 
 <main>
     <aside id="sidebar">
         <div class="filter-container">
+            <div class="filter-title"><i class="fas fa-filter"></i> Filtros</div>
+            
             <div class="input-group">
                 <i class="fas fa-search"></i>
                 <input type="text" id="search-input" placeholder="Busca por nome, programa ou palavra...">
@@ -63,29 +125,37 @@
                 <i class="fas fa-city"></i>
                 <select id="satelite-filter" onchange="applyFilters()">
                     <option value="Todos">Todas as Cidades Satélites</option>
-                    <!-- As opções serão carregadas automaticamente aqui -->
                 </select>
             </div>
 
-            <div class="loc-row" style="display:flex; gap:8px; margin-bottom:12px">
-                <input type="text" id="cep-input" placeholder="CEP de busca" maxlength="9" style="flex:1; padding:12px; border:1px solid #ddd; border-radius:8px">
-                <button onclick="searchCEP()" style="background:var(--primary); color:white; border:none; padding:0 15px; border-radius:8px; font-weight:bold">Buscar</button>
+            <div class="loc-row">
+                <input type="text" id="cep-input" placeholder="Digite o CEP de busca" maxlength="9">
+                <button class="btn-search" onclick="searchCEP()">Buscar</button>
             </div>
 
-            <div class="category-pills" style="display:flex; flex-wrap:wrap; gap:8px">
-                <div class="pill active" style="background:#2196f3; padding:8px 15px; border-radius:25px; color:white; cursor:pointer" onclick="filterCategory('Todos', this)">Todos</div>
-                <div class="pill" style="background:#4caf50; padding:8px 15px; border-radius:25px; color:white; cursor:pointer" onclick="filterCategory('Prestação de serviços', this)">Serviços</div>
-                <div class="pill" style="background:#ff9800; padding:8px 15px; border-radius:25px; color:white; cursor:pointer" onclick="filterCategory('Prestação Pecuniária', this)">Pecuniária</div>
+            <div class="btn-row">
+                <button class="btn-gps" onclick="getLocation()"><i class="fas fa-crosshairs"></i> Meu GPS</button>
+                <button class="btn-clear" onclick="clearFilters()">Limpar</button>
+            </div>
+
+            <div class="category-pills">
+                <div class="pill pill-all active" onclick="filterCategory('Todos', this)">Todos</div>
+                <div class="pill pill-servicos" onclick="filterCategory('Prestação de serviços', this)">Serviços</div>
+                <div class="pill pill-pecuniaria" onclick="filterCategory('Prestação Pecuniária', this)">Pecuniária</div>
+                <div class="pill pill-saude" onclick="filterCategory('Programa de saúde', this)">Saúde</div>
+                <div class="pill pill-palestras" onclick="filterCategory('Palestras', this)">Palestras</div>
             </div>
         </div>
+
         <div id="results-list"></div>
     </aside>
+
     <div id="map"></div>
 </main>
 
 <script>
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw/export?format=csv';
-    let map, markers = [], allData = [], currentCategory = 'Todos', userPos = null;
+    let map, markers = [], allData = [], currentCategory = 'Todos', userPos = null, userMarker = null;
 
     function init() {
         map = L.map('map').setView([-15.7942, -47.8822], 11);
@@ -103,19 +173,22 @@
                     let lat = parseFloat(String(item['Latitude'] || "").replace(',', '.'));
                     let lng = parseFloat(String(item['Longitude'] || "").replace(',', '.'));
                     let sat = item['Cidade Satélite'] || "Brasília";
-                    satelitesSet.add(sat);
+                    if(sat) satelitesSet.add(sat);
+                    
                     return {
                         nome: item['Nome Completo'] || item['Nome da Instituição'] || item['Nome '],
                         endereco: item['Endereço'] || "Não informado",
+                        cep: item['CEP'] || "Não informado",
                         satelite: sat,
                         programas: item['Programa'] || item['Programas'] || "",
+                        horario: item['Horário de Funcionamento'] || "Não informado",
                         lat: isNaN(lat) ? null : lat,
                         lng: isNaN(lng) ? null : lng,
                         raw: JSON.stringify(item).toLowerCase()
                     };
                 });
-                
-                // Preenche o filtro de satélites dinamicamente
+
+                // Popula o filtro de satélites dinamicamente
                 const select = document.getElementById('satelite-filter');
                 Array.from(satelitesSet).sort().forEach(s => {
                     const opt = document.createElement('option');
@@ -126,6 +199,26 @@
                 applyFilters();
             }
         });
+    }
+
+    async function searchCEP() {
+        const cep = document.getElementById('cep-input').value.replace(/\D/g, '');
+        if(cep.length !== 8) return alert("CEP inválido");
+        try {
+            const r = await fetch(`https://brasilapi.com.br/api/cep/v2/${cep}`);
+            const d = await r.json();
+            if (d.location && d.location.coordinates) {
+                userPos = [parseFloat(d.location.coordinates.latitude), parseFloat(d.location.coordinates.longitude)];
+                updateOriginMarker(userPos, `CEP ${cep}`);
+            }
+        } catch(e) { alert("Erro ao localizar CEP."); }
+    }
+
+    function updateOriginMarker(pos, label) {
+        if(userMarker) map.removeLayer(userMarker);
+        userMarker = L.marker(pos, {icon: L.divIcon({className:'origin', html:'<div style="background:#e91e63;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5)"></div>'})}).addTo(map);
+        map.flyTo(pos, 15);
+        applyFilters();
     }
 
     function applyFilters() {
@@ -139,6 +232,12 @@
             return matchSearch && matchSatelite && matchCat;
         });
 
+        if (userPos) {
+            filtered.sort((a, b) => {
+                if(!a.lat || !b.lat) return 1;
+                return calculateDistance(userPos[0], userPos[1], a.lat, a.lng) - calculateDistance(userPos[0], userPos[1], b.lat, b.lng);
+            });
+        }
         render(filtered);
     }
 
@@ -149,6 +248,7 @@
         markers = [];
 
         data.forEach(item => {
+            const dist = userPos && item.lat ? calculateDistance(userPos[0], userPos[1], item.lat, item.lng).toFixed(1) : null;
             const card = document.createElement('div');
             card.className = 'card';
             
@@ -156,6 +256,8 @@
                 let color = "#2196f3";
                 if(p.toLowerCase().includes("serviços")) color = "#4caf50";
                 if(p.toLowerCase().includes("pecuniária")) color = "#ff9800";
+                if(p.toLowerCase().includes("saúde")) color = "#f44336";
+                if(p.toLowerCase().includes("palestras")) color = "#9c27b0";
                 return `<span class="card-tag" style="background:${color}">${p.trim()}</span>`;
             }).join('');
 
@@ -163,12 +265,48 @@
                 <h3>${item.nome}</h3>
                 <p><i class="fas fa-map-marker-alt"></i> ${item.endereco}</p>
                 <p><i class="fas fa-city"></i> ${item.satelite}</p>
-                <div class="card-tags-container">${tagsHtml}</div>
+                <p><i class="fas fa-clock"></i> ${item.horario}</p>
+                <div class="card-tags">${tagsHtml}</div>
+                <div class="card-footer">
+                    <span class="view-map" onclick="zoomTo(${item.lat}, ${item.lng}, event)">
+                        <i class="fas fa-location-arrow"></i> Ver no Mapa
+                    </span>
+                    ${dist ? `<div class="dist-pill">${dist} km</div>` : ''}
+                </div>
             `;
             card.onclick = () => { if(item.lat) map.flyTo([item.lat, item.lng], 18); };
             list.appendChild(card);
             if(item.lat) markers.push(L.marker([item.lat, item.lng]).addTo(map).bindPopup(item.nome));
         });
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(p => {
+                userPos = [p.coords.latitude, p.coords.longitude];
+                updateOriginMarker(userPos, "Sua localização");
+            });
+        }
+    }
+
+    function clearFilters() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('cep-input').value = '';
+        document.getElementById('satelite-filter').value = 'Todos';
+        userPos = null;
+        if (userMarker) map.removeLayer(userMarker);
+        currentCategory = 'Todos';
+        document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+        document.querySelector('.pill-all').classList.add('active');
+        applyFilters();
     }
 
     function filterCategory(cat, el) {
