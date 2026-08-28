@@ -188,7 +188,6 @@
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => {
                 allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição'] || r['Nome Completo']).map(item => {
-                    // LIMPEZA DE COORDENADAS: Garante que vírgula vire ponto para o cálculo de distância
                     let lat = parseFloat(String(item['Latitude'] || item['latitude_opcional_'] || "").replace(',', '.').trim());
                     let lng = parseFloat(String(item['Longitude'] || item['longitude_opcional_'] || "").replace(',', '.').trim());
                     return {
@@ -292,7 +291,6 @@
             return matchSearch && matchCat;
         });
 
-        // ORDENAÇÃO POR PROXIMIDADE: Sempre ativa após busca por CEP ou GPS
         if (userPos) {
             filtered.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
