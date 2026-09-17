@@ -57,8 +57,8 @@
             </div>
 
             <div class="loc-row">
-                <input type="text" id="cep-input" placeholder="Digite o CEP de busca" maxlength="9">
-                <button class="btn-search" onclick="searchCEP()">Buscar</button>
+                <input type="text" id="cep-input" placeholder="Digite o CEP ou Endereço" maxlength="50">
+                <button class="btn-search" onclick="searchLocation()">Buscar</button>
             </div>
 
             <div class="btn-row" style="display:flex; gap:8px; margin-bottom:15px">
@@ -80,7 +80,6 @@
 </main>
 
 <script>
-    // URL DA SUA PLANILHA OFICIAL (MPDFT)
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw/export?format=csv&gid=0';
 
     let map, markers = [], allData = [], currentCategory = 'Todos', userPos = null, userMarker = null;
@@ -99,7 +98,7 @@
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => {
                 allData = results.data.filter(r => r['Nome Completo'] || r['Nome da Instituição'] || r['Nome ']).map(item => {
-                    // LIMPEZA DE COORDENADAS: Garante que o mapa entenda o local exato
+                    // LIMPEZA DE COORDENADAS: Troca vírgula por ponto e remove espaços
                     let latRaw = String(item['Latitude'] || item['Latitude (Opcional)'] || "").replace(',', '.').trim();
                     let lngRaw = String(item['Longitude'] || item['Longitude (Opcional)'] || "").replace(',', '.').trim();
                     
@@ -134,31 +133,36 @@
         document.getElementById('pill-Palestras').innerText = `Palestras (${counts.Palestras})`;
     }
 
-    async function searchCEP() {
-        const cep = document.getElementById('cep-input').value.replace(/\D/g, '');
-        if(cep.length !== 8) return alert("Digite um CEP válido");
+    async function searchLocation() {
+        const input = document.getElementById('cep-input').value;
+        if(input.length < 3) return alert("Digite um CEP ou endereço válido");
 
+        // Se for CEP (apenas números)
+        const isCEP = /^[0-9]{5}-?[0-9]{3}$/.test(input.replace(/\s/g, ''));
+        
         try {
-            // Busca via BrasilAPI (Coordenadas de CEP no DF)
-            const r = await fetch(`https://brasilapi.com.br/api/cep/v2/${cep}`);
-            const d = await r.json();
-            
-            if (d.location && d.location.coordinates) {
-                userPos = [parseFloat(d.location.coordinates.latitude), parseFloat(d.location.coordinates.longitude)];
-                updateOriginMarker(userPos, `CEP ${cep}`);
-            } else {
-                // Fallback para busca textual no OpenStreetMap focada no DF
-                const query = `${d.logradouro || ''}, ${d.bairro || ''}, Brasília, DF, Brasil`;
-                const osmR = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
-                const osmD = await osmR.json();
-                if(osmD.length > 0) {
-                    userPos = [parseFloat(osmD[0].lat), parseFloat(osmD[0].lon)];
-                    updateOriginMarker(userPos, `CEP ${cep}`);
-                } else {
-                    alert("Localização exata não encontrada. Tente o GPS.");
+            if (isCEP) {
+                const r = await fetch(`https://brasilapi.com.br/api/cep/v2/${input.replace(/\D/g, '')}`);
+                const d = await r.json();
+                if (d.location && d.location.coordinates) {
+                    userPos = [parseFloat(d.location.coordinates.latitude), parseFloat(d.location.coordinates.longitude)];
+                    updateOriginMarker(userPos, `CEP ${input}`);
+                    return;
                 }
             }
-        } catch(e) { alert("Erro ao buscar CEP."); }
+
+            // Busca textual (Endereço ou Fallback de CEP)
+            const query = `${input}, Brasília, DF, Brasil`;
+            const osmR = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+            const osmD = await osmR.json();
+            
+            if(osmD.length > 0) {
+                userPos = [parseFloat(osmD[0].lat), parseFloat(osmD[0].lon)];
+                updateOriginMarker(userPos, input);
+            } else {
+                alert("Localização não encontrada. Tente ser mais específico (ex: Quadra, Bloco).");
+            }
+        } catch(e) { alert("Erro ao buscar localização."); }
     }
 
     function updateOriginMarker(pos, label) {
@@ -169,7 +173,7 @@
                 html:'<div style="background:#e91e63;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5)"></div>',
                 iconSize: [18, 18], iconAnchor: [9, 9]
             })
-        }).addTo(map).bindPopup(label).openPopup();
+        }).addTo(map).bindPopup(`<b>Sua busca:</b><br>${label}`).openPopup();
         map.flyTo(pos, 16);
         applyFilters();
     }
@@ -223,7 +227,7 @@
             `;
             card.onclick = () => { if(item.lat) map.flyTo([item.lat, item.lng], 18); };
             list.appendChild(card);
-            if(item.lat) markers.push(L.marker([item.lat, item.lng]).addTo(map).bindPopup(item.nome));
+            if(item.lat) markers.push(L.marker([item.lat, item.lng]).addTo(map).bindPopup(`<b>${item.nome}</b><br>${item.endereco}`));
         });
     }
 
@@ -239,8 +243,8 @@
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(p => {
                 userPos = [p.coords.latitude, p.coords.longitude];
-                updateOriginMarker(userPos, "Sua localização");
-            });
+                updateOriginMarker(userPos, "Sua localização atual");
+            }, () => alert("Por favor, ative o GPS do seu dispositivo."));
         }
     }
 
