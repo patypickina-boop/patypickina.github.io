@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Localizador de Parceiros Sema - MPDFT</title>
     
-    <!-- Bibliotecas Gratuitas -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -29,7 +28,7 @@
         .btn-search { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-gps { flex: 1; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .category-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-        .pill { padding: 8px 15px; border-radius: 25px; font-size: 0.75rem; font-weight: bold; cursor: pointer; color: white; opacity: 0.6; transition: 0.2s; }
+        .pill { padding: 8px 15px; border-radius: 25px; font-size: 0.7rem; font-weight: bold; cursor: pointer; color: white; opacity: 0.6; transition: 0.2s; }
         .pill.active { opacity: 1; transform: scale(1.05); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
         #results-list { flex: 1; overflow-y: auto; padding: 15px; background: #f9f9f9; }
         .card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.05); cursor: pointer; border-left: 6px solid #ddd; transition: 0.2s; height: auto; display: flex; flex-direction: column; }
@@ -68,11 +67,11 @@
             </div>
 
             <div class="category-pills">
-                <div class="pill active" style="background:#2196f3" onclick="filterCategory('Todos', this)">Todos</div>
-                <div class="pill" style="background:#4caf50" onclick="filterCategory('Prestação de serviços', this)">Serviços</div>
-                <div class="pill" style="background:#ff9800" onclick="filterCategory('Prestação Pecuniária', this)">Pecuniária</div>
-                <div class="pill" style="background:#f44336" onclick="filterCategory('Programa de saúde', this)">Saúde</div>
-                <div class="pill" style="background:#9c27b0" onclick="filterCategory('Palestras', this)">Palestras</div>
+                <div class="pill active" id="pill-Todos" style="background:#2196f3" onclick="filterCategory('Todos', this)">Todos (0)</div>
+                <div class="pill" id="pill-Servicos" style="background:#4caf50" onclick="filterCategory('Prestação de serviços', this)">Serviços (0)</div>
+                <div class="pill" id="pill-Pecuniaria" style="background:#ff9800" onclick="filterCategory('Prestação Pecuniária', this)">Pecuniária (0)</div>
+                <div class="pill" id="pill-Saude" style="background:#f44336" onclick="filterCategory('Programa de saúde', this)">Saúde (0)</div>
+                <div class="pill" id="pill-Palestras" style="background:#9c27b0" onclick="filterCategory('Palestras', this)">Palestras (0)</div>
             </div>
         </div>
         <div id="results-list"></div>
@@ -81,7 +80,7 @@
 </main>
 
 <script>
-    // URL da sua planilha publicada como CSV
+    // SUBSTITUA PELA SUA URL CSV DA PLANILHA PUBLICADA
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4piiHPoYzoa6AMbnp3cev6lMx_QTFibh79hifYTXNE0F2a_1I4v7yl7a7xkOCGlAh4k52Jl7pHk4o/pub?output=csv';
 
     let map, markers = [], allData = [], currentCategory = 'Todos', userPos = null, userMarker = null;
@@ -100,63 +99,62 @@
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => {
                 allData = results.data.filter(r => r['Nome Completo'] || r['Nome da Instituição']).map(item => {
-                    // CORREÇÃO DE COORDENADAS: Troca vírgula por ponto e limpa espaços
                     let latRaw = String(item['Latitude'] || "").replace(',', '.').trim();
                     let lngRaw = String(item['Longitude'] || "").replace(',', '.').trim();
-                    let lat = parseFloat(latRaw);
-                    let lng = parseFloat(lngRaw);
-                    
                     return {
                         nome: item['Nome Completo'] || item['Nome da Instituição'],
                         endereco: item['Endereço'] || "Não informado",
                         programas: item['Programa'] || item['Programas'] || "",
                         horario: item['Horário de Funcionamento'] || "Não informado",
-                        lat: isNaN(lat) ? null : lat,
-                        lng: isNaN(lng) ? null : lng,
+                        lat: isNaN(parseFloat(latRaw)) ? null : parseFloat(latRaw),
+                        lng: isNaN(parseFloat(lngRaw)) ? null : parseFloat(lngRaw),
                         raw: JSON.stringify(item).toLowerCase()
                     };
                 });
+                updateCounters();
                 applyFilters();
             }
         });
     }
 
+    function updateCounters() {
+        const counts = {
+            Todos: allData.length,
+            Servicos: allData.filter(i => i.programas.toLowerCase().includes('serviços')).length,
+            Pecuniaria: allData.filter(i => i.programas.toLowerCase().includes('pecuniária')).length,
+            Saude: allData.filter(i => i.programas.toLowerCase().includes('saúde')).length,
+            Palestras: allData.filter(i => i.programas.toLowerCase().includes('palestras')).length
+        };
+        document.getElementById('pill-Todos').innerText = `Todos (${counts.Todos})`;
+        document.getElementById('pill-Servicos').innerText = `Serviços (${counts.Servicos})`;
+        document.getElementById('pill-Pecuniaria').innerText = `Pecuniária (${counts.Pecuniaria})`;
+        document.getElementById('pill-Saude').innerText = `Saúde (${counts.Saude})`;
+        document.getElementById('pill-Palestras').innerText = `Palestras (${counts.Palestras})`;
+    }
+
     async function searchCEP() {
         const cep = document.getElementById('cep-input').value.replace(/\D/g, '');
         if(cep.length !== 8) return alert("Digite um CEP válido");
-
         try {
-            // Busca gratuita via BrasilAPI + Nominatim (OpenStreetMap)
             const r = await fetch(`https://brasilapi.com.br/api/cep/v2/${cep}`);
             const d = await r.json();
-            
             if (d.location && d.location.coordinates) {
                 userPos = [parseFloat(d.location.coordinates.latitude), parseFloat(d.location.coordinates.longitude)];
                 updateOriginMarker(userPos, `CEP ${cep}`);
             } else {
-                // Fallback para busca textual no OpenStreetMap se o CEP não tiver coordenadas na BrasilAPI
-                const query = `${d.logradouro}, ${d.bairro}, ${d.localidade}, DF, Brasil`;
-                const osmR = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+                const osmR = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(d.logradouro + ', DF, Brasil')}&limit=1`);
                 const osmD = await osmR.json();
                 if(osmD.length > 0) {
                     userPos = [parseFloat(osmD[0].lat), parseFloat(osmD[0].lon)];
                     updateOriginMarker(userPos, `CEP ${cep}`);
-                } else {
-                    alert("Localização exata não encontrada. Tente o GPS.");
-                }
+                } else { alert("Localização não encontrada."); }
             }
         } catch(e) { alert("Erro ao buscar CEP."); }
     }
 
     function updateOriginMarker(pos, label) {
         if(userMarker) map.removeLayer(userMarker);
-        userMarker = L.marker(pos, {
-            icon: L.divIcon({
-                className:'origin', 
-                html:'<div style="background:#e91e63;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5)"></div>',
-                iconSize: [18, 18], iconAnchor: [9, 9]
-            })
-        }).addTo(map).bindPopup(label).openPopup();
+        userMarker = L.marker(pos, {icon: L.divIcon({className:'origin', html:'<div style="background:#e91e63;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5)"></div>'})}).addTo(map);
         map.flyTo(pos, 16);
         applyFilters();
     }
@@ -168,7 +166,6 @@
             let matchCat = currentCategory === 'Todos' || i.programas.toLowerCase().includes(currentCategory.toLowerCase());
             return matchSearch && matchCat;
         });
-
         if (userPos) {
             filtered.sort((a, b) => {
                 if(!a.lat || !b.lat) return 1;
@@ -183,12 +180,10 @@
         list.innerHTML = '';
         markers.forEach(m => map.removeLayer(m));
         markers = [];
-
         data.forEach(item => {
             const dist = userPos && item.lat ? calculateDistance(userPos[0], userPos[1], item.lat, item.lng).toFixed(1) : null;
             const card = document.createElement('div');
             card.className = 'card';
-            
             let tagsHtml = item.programas.split(',').map(p => {
                 let color = "#2196f3";
                 if(p.toLowerCase().includes("serviços")) color = "#4caf50";
@@ -197,17 +192,7 @@
                 if(p.toLowerCase().includes("palestras")) color = "#9c27b0";
                 return `<span class="card-tag" style="background:${color}">${p.trim()}</span>`;
             }).join('');
-
-            card.innerHTML = `
-                <h3>${item.nome}</h3>
-                <p><i class="fas fa-map-marker-alt"></i> ${item.endereco}</p>
-                <p><i class="fas fa-clock"></i> ${item.horario}</p>
-                <div class="card-tags">${tagsHtml}</div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px">
-                    <span style="color:var(--link-red); font-weight:bold; font-size:0.8rem">VER NO MAPA</span>
-                    ${dist ? `<div class="dist-pill">${dist} km</div>` : ''}
-                </div>
-            `;
+            card.innerHTML = `<h3>${item.nome}</h3><p><i class="fas fa-map-marker-alt"></i> ${item.endereco}</p><p><i class="fas fa-clock"></i> ${item.horario}</p><div class="card-tags">${tagsHtml}</div><div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px"><span style="color:var(--link-red); font-weight:bold; font-size:0.8rem">VER NO MAPA</span>${dist ? `<div class="dist-pill">${dist} km</div>` : ''}</div>`;
             card.onclick = () => { if(item.lat) map.flyTo([item.lat, item.lng], 18); };
             list.appendChild(card);
             if(item.lat) markers.push(L.marker([item.lat, item.lng]).addTo(map).bindPopup(item.nome));
@@ -238,6 +223,7 @@
         if (userMarker) map.removeLayer(userMarker);
         currentCategory = 'Todos';
         document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+        document.getElementById('pill-Todos').classList.add('active');
         applyFilters();
     }
 
