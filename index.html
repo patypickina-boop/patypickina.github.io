@@ -93,22 +93,28 @@
         document.getElementById('search-input').addEventListener('input', applyFilters);
     }
 
+    // FUNÇÃO CRÍTICA: Corrige coordenadas como -158.132.682 para -15.8132682
+    function fixCoordinate(val) {
+        if (!val) return null;
+        let clean = String(val).replace(/[^\d-]/g, ''); // Remove tudo que não é número ou sinal de menos
+        if (clean.length > 3) {
+            return parseFloat(clean.slice(0, 3) + '.' + clean.slice(3));
+        }
+        return parseFloat(val);
+    }
+
     function loadData() {
         Papa.parse(SHEET_URL, {
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => {
-                allData = results.data.filter(r => r['Nome Completo'] || r['Nome da Instituição'] || r['Nome ']).map(item => {
-                    // LIMPEZA DE COORDENADAS: Troca vírgula por ponto e remove espaços
-                    let latRaw = String(item['Latitude'] || item['Latitude (Opcional)'] || "").replace(',', '.').trim();
-                    let lngRaw = String(item['Longitude'] || item['Longitude (Opcional)'] || "").replace(',', '.').trim();
-                    
+                allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição']).map(item => {
                     return {
-                        nome: item['Nome Completo'] || item['Nome da Instituição'] || item['Nome '],
+                        nome: item['Nome '] || item['Nome da Instituição'],
                         endereco: item['Endereço'] || "Não informado",
                         programas: item['Programa'] || item['Programas'] || "",
                         horario: item['Horário de Funcionamento'] || "Não informado",
-                        lat: isNaN(parseFloat(latRaw)) ? null : parseFloat(latRaw),
-                        lng: isNaN(parseFloat(lngRaw)) ? null : parseFloat(lngRaw),
+                        lat: fixCoordinate(item['Latitude']),
+                        lng: fixCoordinate(item['Longitude']),
                         raw: JSON.stringify(item).toLowerCase()
                     };
                 });
@@ -137,7 +143,6 @@
         const input = document.getElementById('cep-input').value;
         if(input.length < 3) return alert("Digite um CEP ou endereço válido");
 
-        // Se for CEP (apenas números)
         const isCEP = /^[0-9]{5}-?[0-9]{3}$/.test(input.replace(/\s/g, ''));
         
         try {
@@ -151,7 +156,7 @@
                 }
             }
 
-            // Busca textual (Endereço ou Fallback de CEP)
+            // Busca textual forçada no DF para precisão de GPS
             const query = `${input}, Brasília, DF, Brasil`;
             const osmR = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
             const osmD = await osmR.json();
@@ -160,7 +165,7 @@
                 userPos = [parseFloat(osmD[0].lat), parseFloat(osmD[0].lon)];
                 updateOriginMarker(userPos, input);
             } else {
-                alert("Localização não encontrada. Tente ser mais específico (ex: Quadra, Bloco).");
+                alert("Localização não encontrada. Tente ser mais específico.");
             }
         } catch(e) { alert("Erro ao buscar localização."); }
     }
@@ -244,7 +249,7 @@
             navigator.geolocation.getCurrentPosition(p => {
                 userPos = [p.coords.latitude, p.coords.longitude];
                 updateOriginMarker(userPos, "Sua localização atual");
-            }, () => alert("Por favor, ative o GPS do seu dispositivo."));
+            }, () => alert("Ative o GPS do seu dispositivo."));
         }
     }
 
