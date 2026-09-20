@@ -20,7 +20,8 @@
   .chip { padding: 6px 14px; border-radius: 16px; background: #eee; border: 1px solid #ccc; cursor: pointer; font-size: 13px; }
   .chip.ativo { background: #2e7d32; color: #fff; border-color: #2e7d32; }
   #mapa { height: 55vh; min-height: 320px; }
-  #lista { max-width: 700px; margin: 16px auto; padding: 0 12px; }
+  #status { max-width: 700px; margin: 12px auto 0; padding: 0 12px; font-size: 13px; color: #555; }
+  #lista { max-width: 700px; margin: 12px auto 16px; padding: 0 12px; }
   .card { background: #fff; border-radius: 8px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
   .card h3 { font-size: 16px; color: #1b5e20; }
   .card .dist { font-size: 12px; color: #2e7d32; font-weight: bold; }
@@ -35,7 +36,7 @@
 </header>
 
 <div class="controls">
-  <input type="text" id="cep-input" placeholder="Digite CEP ou endereço (ex: 71900-100)">
+  <input type="text" id="cep-input" placeholder="Digite CEP, endereço, programa ou nome">
   <button onclick="searchLocation()">Buscar</button>
   <button onclick="meuGPS()">Meu GPS</button>
   <button class="secundario" onclick="limpar()">Limpar</button>
@@ -43,62 +44,122 @@
 
 <div class="filtros" id="filtros"></div>
 <div id="mapa"></div>
+<div id="status"></div>
 <div id="lista"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // ======================================================================
-// DADOS DOS PARCEIROS
-// Substitua/complete este array com os 409 registros da sua planilha.
-// Colunas: nome | programa | endereco | cep | lat (E) | lng (F) | categoria
-// Coordenadas devem usar PONTO decimal (-15.8123). O código também
-// aceita vírgula e converte automaticamente.
+// BANCO DE DADOS — carregado DIRETO da planilha Google.
+// Ao editar a planilha, o aplicativo reflete automaticamente na próxima
+// abertura. Colunas: Nome | Endereço | CEP | Horário | Programa | Lat | Lng
 // ======================================================================
-const parceiros = [
-  { nome: "13º Grupamento De Bombeiro Militar", programa: "Serviços",
-    endereco: "Vila do Pequenino Jesus, Brasília, DF", cep: "71615-600",
-    lat: "-15.7997", lng: "-47.8645", categoria: "Serviços" },
-  { nome: "[EXEMPLO] Parceiro Águas Claras", programa: "Pecuniária",
-    endereco: "Rua 12 Sul, Águas Claras, DF", cep: "71900-100",
-    lat: "-15.8372", lng: "-48.0166", categoria: "Pecuniária" }
-  // ... cole aqui os demais registros da planilha
-];
+const URL_PLANILHA =
+  'https://docs.google.com/spreadsheets/d/179e4ywz97TK1_oCVbIy258SgTasQ-P0H6jnHKfB0Zgw/gviz/tq?tqx=out:csv';
 
-const CATEGORIAS = ["Todos", "Serviços", "Pecuniária", "Saúde", "Palestras"];
-let categoriaAtiva = "Todos";
+let parceiros = [];
+let CATEGORIAS = [];
+let categoriaAtiva = 'Todos';
+let textoBusca = '';
 let userPos = null;
 let mapa, originMarker, grupoMarcadores;
 
-// ============================ MAPA ====================================
-mapa = L.map('mapa').setView([-15.7939, -47.8828], 11); // centro de Brasília
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors'
-}).addTo(mapa);
-grupoMarcadores = L.layerGroup().addTo(mapa);
+// ============================ UTILITÁRIOS =============================
+const norm = s => String(s ?? '').toLowerCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
 function toNum(v) {
   const n = parseFloat(String(v ?? '').replace(',', '.'));
   return isNaN(n) ? null : n;
 }
 
+// Parser de CSV com suporte a campos entre aspas
+function parseCSV(texto) {
+  const linhas = []; let linha = [], campo = '', entreAspas = false;
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto[i];
+    if (entreAspas) {
+      if (c === '"' && texto[i + 1] === '"') { campo += '"'; i++; }
+      else if (c === '"') entreAspas = false;
+      else campo += c;
+    } else if (c === '"') entreAspas = true;
+    else if (c === ',') { linha.push(campo); campo = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && texto[i + 1] === '\n') i++;
+      linha.push(campo); campo = '';
+      if (linha.length > 1 || linha[0] !== '') linhas.push(linha);
+      linha = [];
+    } else campo += c;
+  }
+  if (campo !== '' || linha.length) { linha.push(campo); linhas.push(linha); }
+  return linhas;
+}
+
+// ===================== CARREGAMENTO DA PLANILHA =======================
+async function carregarDados() {
+  try {
+    const resp = await fetch(URL_PLANILHA);
+    const texto = await resp.text();
+    const linhas = parseCSV(texto);
+    if (linhas.length < 2) throw new Error('planilha vazia');
+    const head = linhas[0].map(h => norm(h));
+    const iNome = head.findIndex(h => h.startsWith('nome'));
+    const iEnd  = head.findIndex(h => h.includes('endereço') || h.includes('endereco'));
+    const iCep  = head.indexOf('cep');
+    const iHor  = head.findIndex(h => h.includes('horário') || h.includes('horario'));
+    const iProg = head.indexOf('programa');
+    const iLat  = head.indexOf('latitude');
+    const iLng  = head.indexOf('longitude');
+
+    const cats = new Set();
+    parceiros = linhas.slice(1).map(l => ({
+      nome:     (l[iNome] || '').trim(),
+      endereco: (l[iEnd]  || '').trim(),
+      cep:      (l[iCep]  || '').trim(),
+      horario:  (l[iHor]  || '').trim(),
+      programa: (l[iProg] || '').trim(),
+      lat: toNum(l[iLat]), lng: toNum(l[iLng])
+    })).filter(p => p.nome);
+
+    parceiros.forEach(p => p.programa.split(/[;,\n]/).forEach(x => {
+      const c = x.trim(); if (c) cats.add(c);
+    }));
+    CATEGORIAS = ['Todos', ...[...cats].sort()];
+  } catch (e) {
+    document.getElementById('status').textContent =
+      'Não foi possível carregar a planilha. Verifique se ela está compartilhada como "qualquer pessoa com o link".';
+  }
+  montarFiltros();
+  exibirParceiros();
+}
+
 // ===================== FILTROS E RENDERIZAÇÃO =========================
+function categoriasDe(p) {
+  return p.programa.split(/[;,\n]/).map(x => x.trim()).filter(Boolean);
+}
+
+function buscarNoBanco() {
+  if (!textoBusca) return parceiros;
+  const t = norm(textoBusca);
+  return parceiros.filter(p =>
+    norm(p.nome).includes(t) || norm(p.endereco).includes(t) ||
+    norm(p.cep.replace(/\D/g, '')).includes(t.replace(/\D/g, '')) ||
+    norm(p.horario).includes(t) || norm(p.programa).includes(t));
+}
+
 function montarFiltros() {
   const div = document.getElementById('filtros');
   div.innerHTML = '';
+  const base = buscarNoBanco(); // respeita o texto digitado
   CATEGORIAS.forEach(c => {
-    const n = c === 'Todos' ? parceiros.length
-            : parceiros.filter(p => p.categoria === c).length;
+    const n = c === 'Todos' ? base.length
+            : base.filter(p => categoriasDe(p).includes(c)).length;
     const chip = document.createElement('div');
     chip.className = 'chip' + (c === categoriaAtiva ? ' ativo' : '');
     chip.textContent = `${c} (${n})`;
     chip.onclick = () => { categoriaAtiva = c; montarFiltros(); exibirParceiros(); };
     div.appendChild(chip);
   });
-}
-
-function filtrados() {
-  return categoriaAtiva === 'Todos'
-    ? parceiros : parceiros.filter(p => p.categoria === categoriaAtiva);
 }
 
 function distanciaKm(lat1, lng1, lat2, lng2) {
@@ -111,16 +172,24 @@ function distanciaKm(lat1, lng1, lat2, lng2) {
 
 function exibirParceiros() {
   const lista = document.getElementById('lista');
+  const status = document.getElementById('status');
+  lista.innerHTML = '';
   grupoMarcadores.clearLayers();
-  let itens = filtrados().map(p => {
-    const lat = toNum(p.lat), lng = toNum(p.lng);
-    return { ...p, lat, lng,
-      dist: (userPos && lat !== null && lng !== null)
-            ? distanciaKm(userPos[0], userPos[1], lat, lng) : null };
-  });
+  let itens = buscarNoBanco()
+    .filter(p => categoriaAtiva === 'Todos' || categoriasDe(p).includes(categoriaAtiva))
+    .map(p => ({ ...p,
+      dist: (userPos && p.lat !== null && p.lng !== null)
+            ? distanciaKm(userPos[0], userPos[1], p.lat, p.lng) : null }));
 
-  // Com localização definida: ordena por proximidade e mostra os 20 mais próximos
-  if (userPos) itens = itens.sort((a, b) => a.dist - b.dist).slice(0, 20);
+  if (textoBusca && itens.length)
+    status.textContent = `${itens.length} resultado(s) no banco de dados para "${textoBusca}"`;
+  else if (textoBusca)
+    status.textContent = `Nenhum registro do banco para "${textoBusca}" — buscando como endereço no mapa.`;
+  else
+    status.textContent = userPos ? 'Resultados ordenados pela sua localização.' : '';
+
+  if (userPos) itens = itens.sort((a, b) => (a.dist ?? 1e9) - (b.dist ?? 1e9));
+  if (userPos && !textoBusca) itens = itens.slice(0, 20);
 
   itens.forEach(p => {
     if (p.lat !== null && p.lng !== null)
@@ -131,65 +200,102 @@ function exibirParceiros() {
     card.className = 'card';
     card.innerHTML = `<h3>${p.nome}</h3>
       <span class="dist">${p.dist !== null ? p.dist.toFixed(1) + ' km' : ''}</span>
-      <p>${p.endereco} — CEP ${p.cep}</p><p>${p.programa}</p>`;
+      <p>${p.endereco}${p.cep ? ' — CEP ' + p.cep : ''}</p>
+      ${p.horario ? `<p><b>Horário:</b> ${p.horario}</p>` : ''}
+      ${p.programa ? `<p><b>Programa:</b> ${p.programa}</p>` : ''}`;
     lista.appendChild(card);
   });
 }
 
-// ==================== CORREÇÃO DA BUSCA POR CEP =======================
-// 1. BrasilAPI: só aceita coordenada se houver RUA identificada
-//    (evita o centroide único de Brasília que fazia tudo cair no mesmo lugar)
-// 2. Nunca geocodifica o CEP como texto: usa o endereço retornado
-// 3. Fallback do Nominatim usa o parâmetro próprio "postalcode"
-// 4. countrycodes=br impede retorno de endereços homônimos no exterior
+// ==================== BUSCA: CEP OU TEXTO =============================
+// CEP: ViaCEP primeiro (logradouro preciso) -> geocodifica o ENDEREÇO.
+//      BrasilAPI só como último recurso (coordenadas postais no DF são
+//      imprecisas — era a causa do pino cair no Núcleo Bandeirante).
+// Texto: 1º procura no banco (nome/programa/endereço/CEP/horário);
+//        só se não achar, geocodifica como endereço no DF.
 async function searchLocation() {
   const input = document.getElementById('cep-input').value.trim();
-  if (input.length < 3) return alert('Digite um CEP ou endereço válido');
+  if (input.length < 3) return alert('Digite um CEP, endereço, programa ou nome');
   const isCEP = /^[0-9]{5}-?[0-9]{3}$/.test(input.replace(/\s/g, ''));
   try {
     if (isCEP) {
-      const cepLimpo = input.replace(/\D/g, '');
-      const r = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepLimpo}`);
-      if (r.ok) {
-        const d = await r.json();
-        if (d.location && d.location.coordinates && d.street) {
-          setUserPos(parseFloat(d.location.coordinates.latitude),
-                     parseFloat(d.location.coordinates.longitude),
-                     `CEP ${input} — ${d.street}`);
-          return;
-        }
-        const endereco = [d.street, d.neighborhood, d.city, d.state]
-          .filter(Boolean).join(', ');
-        if (endereco) {
-          const ok = await geocodeNominatim(endereco, `CEP ${input}`);
-          if (ok) return;
-        }
-      }
-      const osmR = await fetch(
-        'https://nominatim.openstreetmap.org/search?format=json&limit=1' +
-        `&countrycodes=br&postalcode=${cepLimpo}&q=Distrito Federal`);
-      const osmD = await osmR.json();
-      if (osmD && osmD.length > 0) {
-        setUserPos(parseFloat(osmD[0].lat), parseFloat(osmD[0].lon), `CEP ${input}`);
-        return;
-      }
-      alert('CEP não localizado. Digite também o nome da rua ou bairro.');
+      await buscarCEP(input.replace(/\D/g, ''), input);
       return;
     }
-    await geocodeNominatim(`${input}, Distrito Federal, Brasil`, input);
-  } catch (e) { alert('Erro ao buscar localização. Verifique sua conexão.'); }
+    // 1. Procura primeiro no banco de dados
+    textoBusca = input; categoriaAtiva = 'Todos';
+    const achou = buscarNoBanco().length > 0;
+    montarFiltros(); exibirParceiros();
+    if (achou) {
+      const primeiro = buscarNoBanco().find(p => p.lat !== null && p.lng !== null);
+      if (primeiro) mapa.setView([primeiro.lat, primeiro.lng], 14);
+      return;
+    }
+    // 2. Não achou no banco: geocodifica como endereço
+    const ok = await geocodeNominatim(`${input}, Brasília, DF, Brasil`, input)
+            || await geocodeNominatim(`${input}, Distrito Federal, Brasil`, input);
+    if (ok) { textoBusca = ''; montarFiltros(); exibirParceiros(); }
+    else textoBusca = '';
+  } catch (e) { alert('Erro ao buscar. Verifique sua conexão.'); }
+}
+
+// Dentro do DF: rejeita resultados fora da caixa (proteção extra)
+function dentroDoDF(lat, lng) {
+  return lat > -16.1 && lat < -15.4 && lng > -48.4 && lng < -47.2;
+}
+
+async function buscarCEP(cepLimpo, input) {
+  // 1) ViaCEP -> endereço completo -> geocodificador de rua
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+    const d = await r.json();
+    if (d && !d.erro) {
+      const endereco = [d.logradouro, d.bairro, d.localidade, d.uf]
+        .filter(Boolean).join(', ');
+      if (await geocodeNominatim(endereco, `CEP ${input} — ${d.logradouro || ''}`)) return;
+    }
+  } catch (e) {}
+  // 2) BrasilAPI: só aceita se identificar a RUA
+  try {
+    const r = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepLimpo}`);
+    if (r.ok) {
+      const d = await r.json();
+      const lat = toNum(d.location?.coordinates?.latitude);
+      const lng = toNum(d.location?.coordinates?.longitude);
+      if (d.street && lat !== null && lng !== null && dentroDoDF(lat, lng)) {
+        setUserPos(lat, lng, `CEP ${input} — ${d.street}`); return;
+      }
+      const endereco = [d.street, d.neighborhood, d.city, d.state]
+        .filter(Boolean).join(', ');
+      if (endereco && await geocodeNominatim(endereco, `CEP ${input}`)) return;
+    }
+  } catch (e) {}
+  // 3) Último recurso: parâmetro postalcode do Nominatim
+  try {
+    const osmR = await fetch(
+      'https://nominatim.openstreetmap.org/search?format=json&limit=1' +
+      `&countrycodes=br&postalcode=${cepLimpo}&q=Distrito Federal`);
+    const osmD = await osmR.json();
+    if (osmD && osmD.length > 0 &&
+        dentroDoDF(parseFloat(osmD[0].lat), parseFloat(osmD[0].lon))) {
+      setUserPos(parseFloat(osmD[0].lat), parseFloat(osmD[0].lon), `CEP ${input}`);
+      return;
+    }
+  } catch (e) {}
+  alert('CEP não localizado com precisão. Digite também a rua ou o bairro.');
 }
 
 async function geocodeNominatim(query, label) {
   const resp = await fetch(
     'https://nominatim.openstreetmap.org/search?format=json&limit=1' +
-    `&countrycodes=br&addressdetails=1&q=${encodeURIComponent(query)}`);
+    `&countrycodes=br&q=${encodeURIComponent(query)}`);
   const dados = await resp.json();
   if (dados && dados.length > 0) {
-    setUserPos(parseFloat(dados[0].lat), parseFloat(dados[0].lon), label);
+    const lat = parseFloat(dados[0].lat), lng = parseFloat(dados[0].lon);
+    if (!dentroDoDF(lat, lng)) return false; // fora do DF: rejeita
+    setUserPos(lat, lng, label);
     return true;
   }
-  alert('Localização não encontrada. Tente incluir rua, número ou bairro.');
   return false;
 }
 
@@ -197,7 +303,7 @@ async function geocodeNominatim(query, label) {
 function meuGPS() {
   if (!navigator.geolocation) return alert('GPS não suportado neste dispositivo.');
   navigator.geolocation.getCurrentPosition(
-    pos => setUserPos(pos.coords.latitude, pos.coords.longitude, 'Minha localização (GPS)'),
+    pos => { textoBusca = ''; setUserPos(pos.coords.latitude, pos.coords.longitude, 'Minha localização (GPS)'); },
     () => alert('Não foi possível obter sua localização. Autorize o acesso ao GPS.'));
 }
 
@@ -211,19 +317,25 @@ function setUserPos(lat, lng, label) {
 }
 
 function limpar() {
-  userPos = null;
-  if (originMarker) { mapa.removeLayer(originMarker); originMarker = null; }
+  userPos = null; textoBusca = ''; categoriaAtiva = 'Todos';
   document.getElementById('cep-input').value = '';
+  if (originMarker) { mapa.removeLayer(originMarker); originMarker = null; }
   mapa.setView([-15.7939, -47.8828], 11);
-  exibirParceiros();
+  montarFiltros(); exibirParceiros();
 }
 
 // Busca também com a tecla Enter
 document.getElementById('cep-input')
   .addEventListener('keydown', e => { if (e.key === 'Enter') searchLocation(); });
 
-montarFiltros();
-exibirParceiros();
+// ============================ MAPA E INÍCIO ===========================
+mapa = L.map('mapa').setView([-15.7939, -47.8828], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(mapa);
+grupoMarcadores = L.layerGroup().addTo(mapa);
+
+carregarDados();
 </script>
 </body>
 </html>
