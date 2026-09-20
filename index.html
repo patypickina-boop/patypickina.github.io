@@ -93,12 +93,14 @@
         document.getElementById('search-input').addEventListener('input', applyFilters);
     }
 
-    // FUNÇÃO CRÍTICA: Corrige coordenadas como -158.132.682 para -15.8132682
+    // FUNÇÃO DE CORREÇÃO: Transforma -158.132.682 em -15.8132682
     function fixCoordinate(val) {
         if (!val) return null;
-        let clean = String(val).replace(/[^\d-]/g, ''); // Remove tudo que não é número ou sinal de menos
-        if (clean.length > 3) {
+        let clean = String(val).replace(/[^\d-]/g, ''); // Remove pontos e vírgulas
+        if (clean.startsWith('-') && clean.length > 3) {
             return parseFloat(clean.slice(0, 3) + '.' + clean.slice(3));
+        } else if (clean.length > 2) {
+            return parseFloat(clean.slice(0, 2) + '.' + clean.slice(2));
         }
         return parseFloat(val);
     }
@@ -107,11 +109,12 @@
         Papa.parse(SHEET_URL, {
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => {
-                allData = results.data.filter(r => r['Nome '] || r['Nome da Instituição']).map(item => {
+                // FILTRO DE SEGURANÇA: Só aceita linhas que tenham NOME (evita pinos fantasmas)
+                allData = results.data.filter(r => r['Nome '] && r['Nome '].trim() !== "").map(item => {
                     return {
-                        nome: item['Nome '] || item['Nome da Instituição'],
+                        nome: item['Nome '],
                         endereco: item['Endereço'] || "Não informado",
-                        programas: item['Programa'] || item['Programas'] || "",
+                        programas: item['Programa'] || "",
                         horario: item['Horário de Funcionamento'] || "Não informado",
                         lat: fixCoordinate(item['Latitude']),
                         lng: fixCoordinate(item['Longitude']),
@@ -147,6 +150,7 @@
         
         try {
             if (isCEP) {
+                // PRECISÃO DE GPS: Usa BrasilAPI para coordenadas exatas do CEP
                 const r = await fetch(`https://brasilapi.com.br/api/cep/v2/${input.replace(/\D/g, '')}`);
                 const d = await r.json();
                 if (d.location && d.location.coordinates) {
@@ -156,7 +160,7 @@
                 }
             }
 
-            // Busca textual forçada no DF para precisão de GPS
+            // Busca textual forçada no DF
             const query = `${input}, Brasília, DF, Brasil`;
             const osmR = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
             const osmD = await osmR.json();
