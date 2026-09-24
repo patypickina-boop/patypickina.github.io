@@ -406,44 +406,6 @@
             btn.disabled = false;
         }
     }
-            // CAMADA NOVA 2: BrasilAPI como 5º recurso (coordenadas validadas no DF)
-            if (!found) {
-                try {
-                    const rb = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepInput}`);
-                    if (rb.ok) {
-                        const db = await rb.json();
-                        if (db.location && db.location.coordinates) {
-                            const lat = parseFloat(db.location.coordinates.latitude);
-                            const lon = parseFloat(db.location.coordinates.longitude);
-                            if (updateOriginMarker([lat, lon], "CEP: " + cepInput + " (aproximado)")) found = true;
-                        }
-                    }
-                } catch(e) {}
-            }
-            // CAMADA NOVA 3: Photon como recurso final (mesma base OSM, mais tolerante)
-            if (!found && (d.logradouro || d.bairro)) {
-                try {
-                    const q = [d.logradouro, d.bairro, d.localidade].filter(Boolean).join(', ');
-                    const rp = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=-15.7942&lon=-47.8822&limit=1`);
-                    if (rp.ok) {
-                        const dp = await rp.json();
-                        const f = dp.features && dp.features[0];
-                        if (f && f.geometry && f.geometry.coordinates) {
-                            const lon = f.geometry.coordinates[0];
-                            const lat = f.geometry.coordinates[1];
-                            if (updateOriginMarker([lat, lon], "CEP: " + cepInput)) found = true;
-                        }
-                    }
-                } catch(e) {}
-            }
-            if(!found) alert("Não foi possível marcar este CEP no mapa do DF. Tente o GPS.");
-        } catch(e) { 
-            alert("Erro ao buscar CEP. Verifique o número digitado."); 
-        } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
-        }
-    }
     // CAMADA NOVA 1: busca textual — 1º no banco de dados, depois no mapa
     async function searchEndereco(texto) {
         // 1. Procura nas instituições carregadas da planilha
