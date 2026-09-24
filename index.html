@@ -290,7 +290,7 @@
             }, () => alert("Ative o GPS do seu dispositivo."));
         }
     }
-       async function searchCEP() {
+        async function searchCEP() {
         const valorBruto = document.getElementById('cep-input').value.trim();
         const cepInput = valorBruto.replace(/\D/g, '');
         if(valorBruto.length < 3) return alert("Digite um CEP válido com 8 números ou um endereço.");
@@ -313,6 +313,15 @@
             const bairroRA = (d.bairro.match(/\(([^)]+)\)/) || [null, ''])[1] || '';
             const bairroLimpo = (d.bairro.replace(/\([^)]*\)/g, '').trim());
 
+            // Inferência de RA pelo tipo de logradouro (nomenclatura oficial do DF)
+            let raInferida = '';
+            const log = (d.logradouro || '').toUpperCase();
+            if (log.includes('SHIS') || / QI \d/.test(log)) raInferida = 'Lago Sul';
+            else if (log.includes('SHS') || / QS \d/.test(log)) raInferida = 'Asa Sul';
+
+            // Remove o prefixo "Quadra" que impede o casamento no geocodificador
+            const semQuadra = log.replace(/^QUADRA\s+/i, '').trim();
+
             const logradouroLimpo = d.logradouro
                 .replace(/Conjunto\s+\d+(\s+a\s+\d+)?/gi, '')
                 .replace(/Bloco\s+[A-Z0-9]/gi, '')
@@ -320,21 +329,23 @@
                 .replace(/Chácara\s+\d+/gi, '')
                 .trim();
 
-            // Palavras-chave do logradouro, do mais completo ao mais simples
-            const termo = [d.logradouro, logradouroLimpo].filter(Boolean);
             const local = [bairroLimpo, bairroRA, d.localidade, 'DF'].filter(Boolean);
             const locTexto = local.join(', ');
 
-            // ORDEM CORRIGIDA: logradouro completo primeiro (nunca só o CEP solto,
-            // que gerava casamentos fuzzy em bairros errados)
+            // ORDEM: RA inferida primeiro (SHIS/SHS), depois logradouro completo,
+            // nunca o CEP solto (que casava por semelhança em bairros errados)
             const queries = [
-                // 1. Logradouro COMPLETO (com Conjunto/Quadra) + bairro + cidade
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(termo[0] + ', ' + locTexto)}&viewbox=${viewbox}&bounded=1&format=json&limit=1`,
-                // 2. Logradouro limpo + bairro + cidade
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(termo[1] ? termo[1] + ', ' + locTexto : termo[0] + ', ' + d.localidade + ', DF')}&viewbox=${viewbox}&bounded=1&format=json&limit=1`,
-                // 3. RA extraída dos parênteses + cidade (resolve "Sul (Águas Claras)")
+                ...(raInferida ? [
+                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(semQuadra + ', ' + raInferida + ', Brasília, DF')}&viewbox=${viewbox}&bounded=1&format=json&limit=1`,
+                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(logradouroLimpo.replace(/^Quadra\s+/i, '') + ', ' + raInferida + ', Brasília, DF')}&viewbox=${viewbox}&bounded=1&format=json&limit=1`
+                ] : []),
+                // Logradouro COMPLETO (com Conjunto/Quadra) + bairro + cidade
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.logradouro + ', ' + locTexto)}&viewbox=${viewbox}&bounded=1&format=json&limit=1`,
+                // Logradouro limpo + bairro + cidade
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(logradouroLimpo + ', ' + locTexto)}&viewbox=${viewbox}&bounded=1&format=json&limit=1`,
+                // RA extraída dos parênteses + cidade
                 ...(bairroRA ? [`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(d.logradouro + ', ' + bairroRA + ', Brasília, DF')}&viewbox=${viewbox}&bounded=1&format=json&limit=1`] : []),
-                // 4. Bairro + cidade
+                // Bairro + cidade
                 `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(bairroLimpo + ', ' + d.localidade + ', DF')}&viewbox=${viewbox}&bounded=1&format=json&limit=1`
             ];
 
@@ -354,11 +365,10 @@
                 } catch(e) {}
             }
 
-            // Photon: logradouro + RA entre parênteses + cidade (funcionou nos
-            // testes para "Quadra 207 Águas Claras")
+            // Photon: logradouro + RA (inferida ou dos parênteses) + cidade
             if (!found) {
                 try {
-                    const qPhoton = [d.logradouro, bairroRA || bairroLimpo, d.localidade, 'Distrito Federal']
+                    const qPhoton = [d.logradouro.replace(/^Quadra\s+/i, ''), raInferida || bairroRA || bairroLimpo, d.localidade, 'Distrito Federal']
                         .filter(Boolean).join(' ');
                     const rp = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(qPhoton)}&lat=-15.7942&lon=-47.8822&limit=1`);
                     if (rp.ok) {
@@ -388,6 +398,44 @@
                 } catch(e) {}
             }
 
+            if(!found) alert("Não foi possível marcar este CEP no mapa do DF. Tente o GPS.");
+        } catch(e) { 
+            alert("Erro ao buscar CEP. Verifique o número digitado."); 
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+            // CAMADA NOVA 2: BrasilAPI como 5º recurso (coordenadas validadas no DF)
+            if (!found) {
+                try {
+                    const rb = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepInput}`);
+                    if (rb.ok) {
+                        const db = await rb.json();
+                        if (db.location && db.location.coordinates) {
+                            const lat = parseFloat(db.location.coordinates.latitude);
+                            const lon = parseFloat(db.location.coordinates.longitude);
+                            if (updateOriginMarker([lat, lon], "CEP: " + cepInput + " (aproximado)")) found = true;
+                        }
+                    }
+                } catch(e) {}
+            }
+            // CAMADA NOVA 3: Photon como recurso final (mesma base OSM, mais tolerante)
+            if (!found && (d.logradouro || d.bairro)) {
+                try {
+                    const q = [d.logradouro, d.bairro, d.localidade].filter(Boolean).join(', ');
+                    const rp = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=-15.7942&lon=-47.8822&limit=1`);
+                    if (rp.ok) {
+                        const dp = await rp.json();
+                        const f = dp.features && dp.features[0];
+                        if (f && f.geometry && f.geometry.coordinates) {
+                            const lon = f.geometry.coordinates[0];
+                            const lat = f.geometry.coordinates[1];
+                            if (updateOriginMarker([lat, lon], "CEP: " + cepInput)) found = true;
+                        }
+                    }
+                } catch(e) {}
+            }
             if(!found) alert("Não foi possível marcar este CEP no mapa do DF. Tente o GPS.");
         } catch(e) { 
             alert("Erro ao buscar CEP. Verifique o número digitado."); 
